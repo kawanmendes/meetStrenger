@@ -38,6 +38,31 @@ function createClayShadow(depth = 6): ShadowStyle {
 }
 
 // ======================================
+// ✅ HELPER SEGURO PARA SHADOWS
+// ======================================
+
+/**
+ * Retorna shadow seguro para o platform atual
+ * - Em mobile: retorna shadow properties
+ * - Em web: retorna boxShadow CSS-compatible
+ * 
+ * Uso:
+ * style={[styles.button, getShadow(clayMedium)]}
+ */
+export function getShadow(shadow: ShadowStyle | any): ShadowStyle {
+  if (Platform.OS === 'web') {
+    // Web: retorna apenas boxShadow, remove propriedades inválidas
+    return {
+      boxShadow: (shadow as any).boxShadow || 'none',
+    } as ShadowStyle;
+  }
+
+  // Mobile: retorna shadow properties, remove boxShadow
+  const { boxShadow, ...mobileStyle } = shadow as any;
+  return mobileStyle as ShadowStyle;
+}
+
+// ======================================
 // VARIAÇÕES
 // ======================================
 
