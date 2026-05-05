@@ -1,117 +1,82 @@
-import { Text, View, Alert, KeyboardAvoidingView, Platform, Image, StyleSheet } from 'react-native'; 
-import React, {useState} from 'react';
-import {useRouter} from 'expo-router';
-import { Input, Button, useTheme } from '../../design-system';
+import React, { useMemo, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { AnimalAvatar, GradientBackground, PillButton, PillInput, useTheme } from '../../design-system';
+import { useAuth } from '../../hooks/useAuth';
+import { appImages } from '../../constants/assets';
+import { mockUser } from '../../constants/mock';
 
-// import { useAuth} from '../../hooks/useAuth';
+export default function Login() {
+  const router = useRouter();
+  const theme = useTheme();
+  const { login, isLoading } = useAuth();
+  const [email, setEmail] = useState(mockUser.email);
+  const [password, setPassword] = useState('mock123');
 
-export default function Login() { 
-    const router = useRouter();
-    const { colors, spacing, clay, radius } = useTheme();
-    //const {Login} = useAuth();
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, _setLoading] = useState (false);
-    
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: colors.background,
-        },
-        content: {
-            flex: 1,
-            paddingHorizontal: spacing.xl,
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        logo: {
-            width: 120,
-            height: 120,
-            marginBottom: spacing.xl,
-            ...clay.combined,
-            borderRadius: radius.full,
-        },
-        title: {
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: colors.primary,
-            marginBottom: spacing.sm,
-            textAlign: 'center',
-        },
-        subtitle: {
-            fontSize: 16,
-            color: colors.textSecondary,
-            marginBottom: spacing.xl,
-            textAlign: 'center',
-        },
-        inputContainer: {
-            width: '100%',
-            marginBottom: spacing.lg,
-        },
-        loginButton: {
-            marginBottom: spacing.sm,
-        },
-    });
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    content: {
+      flex: 1,
+      justifyContent: 'center',
+      paddingHorizontal: theme.spacing['2xl'],
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: theme.spacing['3xl'],
+      gap: theme.spacing.md,
+    },
+    title: {
+      color: '#FFFFFF',
+      fontSize: 30,
+      lineHeight: 36,
+      fontWeight: '900',
+      textAlign: 'center',
+    },
+    subtitle: {
+      color: 'rgba(255,255,255,0.84)',
+      fontSize: 15,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    form: {
+      gap: theme.spacing.xs,
+    },
+  }), [theme]);
 
-    const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Erro', 'Por Favor, preencha todos os campos.');
-            return;
-        }
-        try {
-            // const sucess = await Login(email, password);
-            // if (success) {
-            // } else {
-            // Alert.alert('Error', 'credenciais invalidas. tente novamente.');
-            // }
-            router.replace('/home');
-        } catch (error) {
-            Alert.alert('erro', 'ocorreu um erro ao tentar fazer login. tente novamente.')
-        }
-    };
-    
-return ( 
-    <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === "android" ? -85 : 0}
-        >
-            <View style={styles.content}>
-                <Image source={require('../../assets/favicon.png')} style={styles.logo} resizeMode='contain'/>
-                <Text style={styles.title}>Bem-vindo ao app MeetStranger!</Text>
-                <Text style={styles.subtitle}>Faça login para continuar</Text>
-                <View style={styles.inputContainer}>
-                    <Input
-                    label='Email'
-                    value={email}
-                    onChangeText={setEmail}
-                    keyboardType='email-address'
-                    autoCapitalize='none'
-                    placeholder='seu@email.com'
-                    variant='clay'
-                    />
-                    <Input
-                    label='Senha'
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                    placeholder='********'
-                    variant='clay'
-                    />
-                    <Button
-                    title='Login'
-                    variant='clay'
-                    onPress={handleLogin}
-                    disabled={loading}
-                    style={styles.loginButton}
-                    />
-                    <Button
-                    title='Criar conta'
-                    onPress={() => router.push('/auth/register')}
-                    variant='secondary'
-                    />
-                </View>
-            </View>
-        </KeyboardAvoidingView>
-); 
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      Alert.alert('Erro', 'Preencha email e senha.');
+      return;
+    }
+
+    const success = await login(email.trim(), password);
+    if (success) {
+      router.replace('/home');
+      return;
+    }
+
+    Alert.alert('Erro', 'Credenciais invalidas. Tente novamente.');
+  };
+
+  return (
+    <GradientBackground variant="closeup">
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <AnimalAvatar source={appImages.mascot} size={118} />
+            <Text style={styles.title}>Bem-vindo de volta</Text>
+            <Text style={styles.subtitle}>Use sua conta para encontrar novas conversas.</Text>
+          </View>
+          <View style={styles.form}>
+            <PillInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="seu@email.com" />
+            <PillInput label="Senha" value={password} onChangeText={setPassword} secureTextEntry placeholder="Sua senha" />
+            <PillButton title="Entrar" variant="primary" onPress={handleLogin} loading={isLoading} />
+            <PillButton title="Criar conta" onPress={() => router.push('/auth/register')} />
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </GradientBackground>
+  );
 }

@@ -11,7 +11,9 @@
 
 import { ColorTokens, lightTheme, darkTheme } from './tokens/colors';
 import { FontSizes, FontWeights, LineHeights, TextStyles } from './tokens/typography';
-import { Spacing, BorderRadius, Layout, Shadows, Opacity } from './tokens/spacing';
+import { Spacing, BorderRadius, Layout, Opacity } from './tokens/spacing';
+import { AppShadows } from './tokens/shadows';
+import { Gradients } from './tokens/gradients';
 
 // ======================================
 // TOKENS DE CLAYMORPHISM (SOFT UI)
@@ -72,7 +74,8 @@ export const theme = {
   },
 
   // Sombras (padrão + claymorphism)
-  shadows: Shadows,
+  shadows: AppShadows,
+  gradients: Gradients,
 
   // Bordas/raios
   radius: BorderRadius,
@@ -99,7 +102,8 @@ export const themeDark = {
     lineHeights: LineHeights,
     textStyles: TextStyles,
   },
-  shadows: Shadows,
+  shadows: AppShadows,
+  gradients: Gradients,
   radius: BorderRadius,
   layout: Layout,
   opacity: Opacity,

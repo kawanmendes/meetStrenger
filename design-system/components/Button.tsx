@@ -1,213 +1,95 @@
-// Importa React
-import React from 'react';
+import React, { useMemo } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
+import { useTheme } from '../hooks/useTheme';
+import { getShadow } from '../tokens/shadows';
 
-// Importa componentes e tipos do React Native
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-
-// Importa tokens de cores
-import { Colors } from '../tokens/colors';
-
-// Importa estilos tipográficos
-import { TextStyles } from '../tokens/typography';
-
-// Importa tokens de espaçamento, borda, layout e opacidade
-import { Spacing, BorderRadius, Layout, Opacity } from '../tokens/spacing';
-
-// Importa sombras de claymorphism
-import { clayMedium, clayStrong } from '../tokens/shadows';
-
-// Define as variantes do botão (inclui danger e clay)
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'clay';
-
-// Define os tamanhos disponíveis
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
-// Interface das props do botão
 interface ButtonProps {
-  title: string;              // Texto exibido
-  onPress: () => void;        // Função de clique
-  variant?: ButtonVariant;    // Variante visual
-  size?: ButtonSize;          // Tamanho
-  disabled?: boolean;         // Estado desabilitado
-  loading?: boolean;          // Estado de carregamento
-  style?: ViewStyle;          // Estilo externo do container
-  textStyle?: TextStyle;      // Estilo externo do texto
-  fullWidth?: boolean;        // Ocupa largura total
+  title: string;
+  onPress: () => void;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  disabled?: boolean;
+  loading?: boolean;
+  style?: ViewStyle;
+  textStyle?: TextStyle;
+  fullWidth?: boolean;
 }
 
-// Componente Button
-export function Button({
+export function Button(props: ButtonProps) {
+  return <PillCompatButton {...props} />;
+}
+
+function PillCompatButton({
   title,
   onPress,
-  variant = 'primary',   // Valor padrão
-  size = 'md',           // Valor padrão
-  disabled = false,      // Valor padrão
-  loading = false,       // Valor padrão
+  variant = 'primary',
+  size = 'md',
+  disabled = false,
+  loading = false,
   style,
   textStyle,
-  fullWidth = false,     // Valor padrão
+  fullWidth = false,
 }: ButtonProps) {
+  const theme = useTheme();
+  const isPrimary = variant === 'primary' || variant === 'clay';
+  const isDanger = variant === 'danger';
 
-  // Função intermediária para evitar clique quando desabilitado ou carregando
-  const handlePress = () => {
-    if (!disabled && !loading) {
-      onPress(); // Executa ação apenas se permitido
-    }
-  };
+  const styles = useMemo(() => StyleSheet.create({
+    button: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: size === 'lg' ? 58 : size === 'sm' ? 42 : 52,
+      paddingHorizontal: size === 'lg' ? theme.spacing['2xl'] : theme.spacing.xl,
+      paddingVertical: size === 'sm' ? theme.spacing.sm : theme.spacing.md,
+      borderRadius: theme.radius.full,
+      borderWidth: variant === 'ghost' ? 0 : 1,
+      borderColor: isPrimary ? theme.colors.borderLight : theme.colors.border,
+      backgroundColor: isDanger
+        ? theme.colors.error
+        : isPrimary
+          ? theme.colors.surfaceElevated
+          : variant === 'ghost'
+            ? 'transparent'
+            : theme.colors.surface,
+      opacity: disabled ? theme.opacity.disabled : 1,
+      ...(variant === 'ghost' ? {} : getShadow(theme.shadows.glass)),
+    },
+    fullWidth: {
+      width: '100%',
+    },
+    text: {
+      fontSize: size === 'lg' ? 17 : size === 'sm' ? 13 : 15,
+      lineHeight: size === 'lg' ? 22 : 18,
+      fontWeight: '800',
+      color: isDanger
+        ? '#FFFFFF'
+        : isPrimary
+          ? theme.colors.primaryDark
+          : theme.colors.textPrimary,
+      textAlign: 'center',
+    },
+  }), [disabled, isDanger, isPrimary, size, theme, variant]);
 
   return (
-    <TouchableOpacity
-
-      // Combinação de estilos dinâmica
-      style={[
-        styles.base,                  // Base do botão
-        styles[variant],              // Variante (primary, secondary, etc.)
-        styles[size],                 // Tamanho (sm, md, lg)
-        disabled && styles.disabled,  // Estado desabilitado
-        fullWidth && styles.fullWidth,// Largura total
-        style,                        // Estilo externo
-      ]}
-
-      // Evento de clique controlado
-      onPress={handlePress}
-
-      // Bloqueia interação se desabilitado ou carregando
+    <Pressable
+      accessibilityRole="button"
       disabled={disabled || loading}
-
-      // Opacidade ao pressionar
-      activeOpacity={0.8}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.button,
+        fullWidth && styles.fullWidth,
+        pressed && !disabled ? { transform: [{ scale: 0.98 }] } : null,
+        style,
+      ]}
     >
-
-      <Text
-
-        // Estilos do texto
-        style={[
-          styles.text,                    // Base tipográfica
-          styles[`${variant}Text`],       // Cor baseada na variante
-          styles[`${size}Text`],          // Ajuste de tamanho do texto
-          disabled && styles.disabledText,// Cor para estado desabilitado
-          textStyle,                      // Estilo externo
-        ]}
-      >
-
-        {/* Mostra loading ou título */}
-        {loading ? 'Carregando...' : title}
-
-      </Text>
-    </TouchableOpacity>
+      {loading ? (
+        <ActivityIndicator color={isDanger ? '#FFFFFF' : theme.colors.primaryDark} />
+      ) : (
+        <Text style={[styles.text, textStyle]}>{title}</Text>
+      )}
+    </Pressable>
   );
 }
-
-// Criação dos estilos
-const styles = StyleSheet.create({
-
-  // Base do botão
-  base: {
-    alignItems: 'center',                // Centraliza horizontal
-    justifyContent: 'center',            // Centraliza vertical
-    borderRadius: BorderRadius.button,   // Borda arredondada
-    minHeight: Layout.minTouchTarget,    // Área mínima de toque
-  },
-  
-  // Variantes visuais
-  primary: {
-    backgroundColor: Colors.primary,     // Fundo principal
-  },
-  secondary: {
-    backgroundColor: Colors.surface,     // Fundo neutro
-    borderWidth: 1,                      // Borda
-    borderColor: Colors.border,          // Cor da borda
-  },
-  ghost: {
-    backgroundColor: 'transparent',      // Sem fundo
-  },
-  danger: {
-    backgroundColor: Colors.error,       // Cor de erro
-  },
-
-  // Variante clay (claymorphism - soft UI)
-  clay: {
-    backgroundColor: Colors.surface,
-    ...clayMedium,                       // Sombra clay
-  },
-  
-  // Tamanhos do botão
-  sm: {
-    paddingHorizontal: Spacing.md,       // Espaço lateral
-    paddingVertical: Spacing.md,         // Espaço vertical
-    minHeight: 44,                       // Altura mínima
-  },
-  md: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-    minHeight: 52,
-  },
-  lg: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xl,
-    minHeight: 56,
-  },
-  
-  // Estados
-  disabled: {
-    backgroundColor: Colors.border,      // Fundo neutro
-    opacity: Opacity.disabled,           // Reduz visibilidade
-  },
-  fullWidth: {
-    width: '100%',                       // Ocupa largura total
-  },
-  
-  // Texto base
-  text: {
-    ...TextStyles.button,                // Tipografia padrão
-    textAlign: 'center',                 // Centraliza texto
-    includeFontPadding: false,           // Remove padding interno (Android)
-    textAlignVertical: 'center',         // Centraliza vertical (Android)
-  },
-
-  // Texto por variante
-  primaryText: {
-    color: Colors.background,            // Texto claro
-    fontWeight: '600',
-  },
-  secondaryText: {
-    color: Colors.textPrimary,
-    fontWeight: '600',
-  },
-  ghostText: {
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  dangerText: {
-    color: Colors.background,
-    fontWeight: '600',
-  },
-
-  // Texto para variante clay
-  clayText: {
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-
-  // Texto desabilitado
-  disabledText: {
-    color: Colors.textTertiary,
-  },
-  
-  // Ajustes de texto por tamanho
-  smText: {
-    fontSize: 13,
-    fontWeight: '600',
-    lineHeight: 16,
-  },
-  mdText: {
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 18,
-  },
-  lgText: {
-    fontSize: 17,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
-});

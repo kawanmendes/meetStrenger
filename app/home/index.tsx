@@ -1,153 +1,149 @@
-import { Text, View, Image, StyleSheet, ScrollView } from 'react-native';
-import { Button, Card, useTheme } from '../../design-system';
+import React, { useMemo } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-//import { useAAuth} from '../..hooks/useAuth';
-import React from 'react';
+import { AnimalAvatar, GradientBackground, PillButton, useTheme } from '../../design-system';
+import { useAuth } from '../../hooks/useAuth';
+import { appImages } from '../../constants/assets';
+
+const categories = [
+  { id: 'movies', name: 'Filmes', description: 'Cenas, favoritos e recomendacoes.', icon: 'MV' },
+  { id: 'gaming', name: 'Games', description: 'Partidas, ranks e proximos lancamentos.', icon: 'GG' },
+  { id: 'music', name: 'Musica', description: 'Playlists, artistas e shows.', icon: 'MS' },
+];
 
 export default function Home() {
-    const router = useRouter();
-    const { colors, spacing, clay, radius } = useTheme();
-    // const { user, Logout } = useAuth();
-    const user = { username: 'Kawan' }; //remover após implementação
+  const router = useRouter();
+  const theme = useTheme();
+  const { user, logout } = useAuth();
 
-    const styles = StyleSheet.create({
-        container: {
-            flex: 1,
-            backgroundColor: colors.background,
-        },
-        header: {
-            paddingTop: spacing['4xl'],
-            paddingBottom: spacing.xl,
-            paddingHorizontal: spacing.lg,
-            alignItems: 'center',
-        },
-        logo: {
-            width: 120,
-            height: 120,
-            marginBottom: spacing.xl,
-            borderRadius: radius.full,
-        },
-        welcome: {
-            fontSize: 24,
-            fontWeight: 'bold',
-            color: colors.primary,
-            marginBottom: spacing.sm,
-            letterSpacing: -0.1,
-            textAlign: 'center',
-        },
-        subTitle: {
-            fontSize: 14,
-            color: colors.textSecondary,
-            lineHeight: 20,
-            textAlign: 'center',
-        },
-        content: {
-            flex: 1,
-            paddingHorizontal: spacing.lg,
-            paddingTop: spacing.lg,
-        },
-        cardContainer: {
-            marginBottom: spacing.lg,
-        },
-        cardTitle: {
-            fontSize: 18,
-            fontWeight: 'bold',
-            color: colors.primary,
-            marginBottom: spacing.md,
-            letterSpacing: -0.2,
-        },
-        cardDescription: {
-            fontSize: 14,
-            color: colors.textSecondary,
-            lineHeight: 20,
-        },
-        featureRow: {
-            marginBottom: spacing.lg,
-        },
-        feature: {
-            alignItems: 'center',
-            marginBottom: spacing.md,
-        },
-        featureIcon: {
-            fontSize: 28,
-            marginBottom: spacing.xs,
-        },
-        featureText: {
-            fontSize: 12,
-            color: colors.primary,
-            fontWeight: '500',
-            textAlign: 'center',
-        },
-        buttonsContainer: {
-            paddingHorizontal: spacing.lg,
-            paddingBottom: spacing['4xl'],
-            gap: spacing.sm,
-        },
-        button: {
-            marginBottom: spacing.sm,
-        },
-    });
+  const styles = useMemo(() => StyleSheet.create({
+    container: {
+      flex: 1,
+      paddingTop: theme.spacing['4xl'],
+      paddingHorizontal: theme.spacing.lg,
+    },
+    topBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: theme.spacing['2xl'],
+    },
+    greeting: {
+      flex: 1,
+      marginLeft: theme.spacing.md,
+    },
+    hello: {
+      color: 'rgba(255,255,255,0.82)',
+      fontSize: 13,
+      fontWeight: '800',
+    },
+    name: {
+      color: '#FFFFFF',
+      fontSize: 22,
+      lineHeight: 27,
+      fontWeight: '900',
+    },
+    profile: {
+      width: 44,
+      height: 44,
+      borderRadius: theme.radius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.84)',
+    },
+    profileText: {
+      color: theme.colors.primaryDark,
+      fontWeight: '900',
+      fontSize: 18,
+    },
+    title: {
+      color: '#FFFFFF',
+      fontSize: 30,
+      lineHeight: 36,
+      fontWeight: '900',
+      marginBottom: theme.spacing.sm,
+    },
+    subtitle: {
+      color: 'rgba(255,255,255,0.82)',
+      fontSize: 15,
+      fontWeight: '700',
+      lineHeight: 22,
+      marginBottom: theme.spacing.xl,
+    },
+    list: {
+      paddingBottom: theme.spacing['4xl'],
+      gap: theme.spacing.md,
+    },
+    card: {
+      minHeight: 112,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.md,
+      padding: theme.spacing.lg,
+      borderRadius: theme.radius['2xl'],
+      borderWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: 'rgba(255,255,255,0.82)',
+    },
+    cardText: {
+      flex: 1,
+    },
+    categoryName: {
+      color: theme.colors.textPrimary,
+      fontSize: 18,
+      fontWeight: '900',
+      marginBottom: theme.spacing.xs,
+    },
+    categoryDescription: {
+      color: theme.colors.textSecondary,
+      fontSize: 13,
+      fontWeight: '700',
+      lineHeight: 18,
+    },
+    footer: {
+      gap: theme.spacing.md,
+      paddingBottom: theme.spacing.lg,
+    },
+  }), [theme]);
 
-    const handleStartChat = () => {
-        router.push('/chat/select');
-    }
-    const handleAbout = () => {
-        router.push('/about');
-    }
-    const handleLogout = async () => {
-        // await Logout();
-        router.replace('/auth/login');
-    }
+  const openCategory = (categoryId: string) => {
+    router.push(`/chat/room?category=${categoryId}`);
+  };
 
-    return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <Image style={styles.logo} source={require('../../assets/favicon.png')}
-                    resizeMode='contain'
-                />
-                <Text style={styles.welcome}>Bem-vindo, {user?.username || 'Stranger'}</Text>
-                <Text style={styles.subTitle}>Pronto para se conectar com novas pessoas?</Text>
-            </View>
-
-            <ScrollView style={styles.content}>
-                <Card variant='clay' padding='lg' style={styles.cardContainer}>
-                    <Text style={styles.cardTitle}>MeetStranger</Text>
-                    <Text style={styles.cardDescription}>Converse com pessoas ao redor do mundo e encontre pessoas que tenha os mesmos interesses que você!!!</Text>
-                </Card>
-
-                <View style={styles.featureRow}>
-                    <View style={styles.feature}>
-                        <Text style={styles.featureIcon}>🫦</Text>
-                        <Text style={styles.featureText}>Explore o mundo através do MeetStranger</Text>
-                    </View>
-
-                    <View style={styles.feature}>
-                        <Text style={styles.featureIcon}>😘</Text>
-                        <Text style={styles.featureText}>Converse com pessoas ao redor do mundo de forma rápida e fácil</Text>
-                    </View>
-                </View>
-            </ScrollView>
-
-            <View style={styles.buttonsContainer}>
-                <Button
-                    title='Iniciar Chat'
-                    variant='clay'
-                    onPress={handleStartChat}
-                    style={styles.button}
-                />
-                <Button
-                    title='Conheça mais sobre o app'
-                    variant='secondary'
-                    onPress={handleAbout}
-                    style={styles.button}
-                />
-                <Button
-                    title='Sair'
-                    variant='secondary'
-                    onPress={handleLogout}
-                    style={styles.button}
-                />
-            </View>
+  return (
+    <GradientBackground variant="vivid">
+      <View style={styles.container}>
+        <View style={styles.topBar}>
+          <AnimalAvatar size={56} source={appImages.mascot} />
+          <View style={styles.greeting}>
+            <Text style={styles.hello}>Ola,</Text>
+            <Text style={styles.name}>{user?.username || 'Stranger'}</Text>
+          </View>
+          <Pressable style={styles.profile} onPress={() => router.push('/profile')}>
+            <Text style={styles.profileText}>P</Text>
+          </Pressable>
         </View>
-    );
+
+        <Text style={styles.title}>Escolha uma categoria</Text>
+        <Text style={styles.subtitle}>A home agora leva direto ao que importa: encontrar alguem com assunto em comum.</Text>
+
+        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+          {categories.map((category) => (
+            <Pressable key={category.id} style={styles.card} onPress={() => openCategory(category.id)}>
+              <AnimalAvatar size={58} animal={category.icon} />
+              <View style={styles.cardText}>
+                <Text style={styles.categoryName}>{category.name}</Text>
+                <Text style={styles.categoryDescription}>{category.description}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <PillButton title="Loja de avatares" onPress={() => router.push('/profile/avatar-shop')} />
+          <PillButton title="Sair" variant="ghost" onPress={logout} />
+        </View>
+      </View>
+    </GradientBackground>
+  );
 }

@@ -1,114 +1,75 @@
-import { Text, View, Pressable, StyleSheet, SafeAreaView } from 'react-native'
-import { Link } from 'expo-router'
-import FontAwesome from '@expo/vector-icons/FontAwesome'
-import { useTheme } from '../design-system'
-import { clayMedium, getShadow } from '../design-system/tokens/shadows'
+import React, { useMemo } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { AnimalAvatar, GradientBackground, PillButton, useTheme } from '../design-system';
+import { appImages } from '../constants/assets';
+import { mockUser } from '../constants/mock';
+import { useAuth } from '../hooks/useAuth';
 
 export default function WelcomeScreen() {
-  const { colors, spacing, radius } = useTheme()
-
-  const shadowStyle = getShadow(clayMedium)
-
-  const styles = StyleSheet.create({
-    container: {
+  const router = useRouter();
+  const theme = useTheme();
+  const { login } = useAuth();
+  const styles = useMemo(() => StyleSheet.create({
+    safe: {
       flex: 1,
-      backgroundColor: colors.background,
+      paddingHorizontal: theme.spacing['2xl'],
+      paddingTop: theme.spacing['4xl'],
+      paddingBottom: theme.spacing['3xl'],
       justifyContent: 'space-between',
-    },
-    row: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      paddingVertical: spacing.lg,
-      paddingHorizontal: spacing.md,
-      gap: spacing.md,
-    },
-    button: {
-      flex: 1,
-      paddingVertical: spacing.lg,
-      paddingHorizontal: spacing.md,
-      borderRadius: radius.lg,
-      backgroundColor: colors.surface,
-      justifyContent: 'center',
       alignItems: 'center',
-      minHeight: 60,
-      borderWidth: 1,
-      borderColor: colors.border,
     },
-    highlightButton: {
-      backgroundColor: colors.primary,
+    brand: {
+      alignItems: 'center',
+      paddingTop: theme.spacing['3xl'],
+      gap: theme.spacing.lg,
     },
-    buttonText: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: colors.textPrimary,
+    logo: {
+      width: 128,
+      height: 128,
+      borderRadius: theme.radius.full,
+    },
+    title: {
+      color: '#FFFFFF',
+      fontSize: 34,
+      lineHeight: 40,
+      fontWeight: '900',
       textAlign: 'center',
     },
-    highlightButtonText: {
-      color: colors.background,
+    subtitle: {
+      color: 'rgba(255,255,255,0.86)',
       fontSize: 16,
+      lineHeight: 23,
+      fontWeight: '700',
+      textAlign: 'center',
+      maxWidth: 320,
     },
-    buttonIcon: {
-      position: 'absolute',
-      right: spacing.lg,
+    actions: {
+      width: '100%',
+      gap: theme.spacing.md,
     },
-    highlightIcon: {
-      color: colors.background,
-    },
-    spacer: {
-      flex: 1,
-    },
-  })
+  }), [theme]);
+
+  const enterWithMockUser = async () => {
+    await login(mockUser.email, 'mock123');
+    router.replace('/home');
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.row}>
-        <Link href="/auth/login" asChild>
-          <Pressable style={{ ...styles.button, ...shadowStyle }}>
-            <Text style={styles.buttonText}>LOGIN</Text>
-          </Pressable>
-        </Link>
+    <GradientBackground variant="bubbles">
+      <View style={styles.safe}>
+        <View style={styles.brand}>
+          <AnimalAvatar size={150} source={appImages.mascot} />
+          <Text style={styles.title}>MeetStranger</Text>
+          <Text style={styles.subtitle}>Entre em salas por interesses e converse com alguem novo em segundos.</Text>
+        </View>
 
-        <Link href="/auth/register" asChild>
-          <Pressable style={{ ...styles.button, ...styles.highlightButton, ...shadowStyle }}>
-            <Text style={{ ...styles.buttonText, ...styles.highlightButtonText }}>
-              REGISTRAR
-            </Text>
-            <FontAwesome
-              name="user-plus"
-              size={16}
-              style={{ ...styles.buttonIcon, ...styles.highlightIcon }}
-            />
-          </Pressable>
-        </Link>
-
-        <Link href="/chat/select" asChild>
-          <Pressable style={{ ...styles.button, ...shadowStyle }}>
-            <Text style={styles.buttonText}> CHAT</Text>
-          </Pressable>
-        </Link>
+        <View style={styles.actions}>
+          <PillButton title="Entrar como teste" variant="primary" onPress={enterWithMockUser} />
+          <PillButton title="Entrar" variant="primary" onPress={() => router.push('/auth/login')} />
+          <PillButton title="Criar conta" onPress={() => router.push('/auth/register')} />
+        </View>
       </View>
-
-      <View style={styles.spacer} />
-
-      <View style={styles.row}>
-        <Link href="/about" asChild>
-          <Pressable style={{ ...styles.button, ...shadowStyle }}>
-            <Text style={styles.buttonText}>ℹSOBRE</Text>
-          </Pressable>
-        </Link>
-
-        <Link href="/chat/room" asChild>
-          <Pressable style={{ ...styles.button, ...shadowStyle }}>
-            <Text style={styles.buttonText}> ROOM</Text>
-          </Pressable>
-        </Link>
-
-        <Link href="/home" asChild>
-          <Pressable style={{ ...styles.button, ...shadowStyle }}>
-            <Text style={styles.buttonText}> HOME</Text>
-          </Pressable>
-        </Link>
-      </View>
-    </SafeAreaView>
-  )
+    </GradientBackground>
+  );
 }

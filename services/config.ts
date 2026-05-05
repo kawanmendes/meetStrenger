@@ -1,32 +1,9 @@
+import Constants from 'expo-constants';
+
+const extra = Constants.expoConfig?.extra ?? {};
+
 export const API_CONFIG = {
-    BASE_URL: 'MEU SERVIDOR_AQUI', // Substitua pelo URL do seu servidor
-    SOCKET_URL: 'MEU SERVIDOR_SEM_O_PREFIXO_AQUI', // Substitua pelo URL do seu servidor de WebSocket
-    TIMEOUT: 6000, // Tempo limite para requisições em milissegundos
-}
-
-export interface ApiResponse<T= any> {
-    success: boolean;
-    data?: T;
-    error?: string;
-}
-
-export interface User {
-    id: string;
-    username: string;
-    email: string;
-    createdAt: string;
-}
-export interface ChatRoom {
-    id: string;
-    name: string;
-    participants: User[];
-    createdAt: string;
-}
-export interface Message {
-    id: string;
-    RoomId: string;
-    userId: string;
-    username: string;
-    text: string;
-    timestamp: string;
-}
+  BASE_URL: process.env.EXPO_PUBLIC_API_URL || extra.API_URL || 'http://localhost:3000/api',
+  SOCKET_URL: process.env.EXPO_PUBLIC_WS_URL || extra.WS_URL || 'ws://localhost:3000',
+  TIMEOUT: 6000,
+};

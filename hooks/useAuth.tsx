@@ -1,7 +1,8 @@
-import React, {createContext, ReactNode, useContext, useEffect, useState}from "react";
+import React, {createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState}from "react";
 import { User } from "../constants/types";
+import { MOCK_AUTH_ENABLED, mockUser } from "../constants/mock";
 import { apiService } from "../services/api";
-import { wsService } from "../services/wabsocket";
+import { wsService } from "../services/websocket";
 
 interface AuthContextType {
     user: User | null;
@@ -15,58 +16,106 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({children}: {children: ReactNode}) {
     const [user,setUser] = useState<User | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    useEffect(()=> {
-        checkAuthStatus();
-    }, [])
-    const checkAuthStatus = async () => {
+
+    const checkAuthStatus = useCallback(async () => {
+        setIsLoading(true);
+        if (MOCK_AUTH_ENABLED) {
+            setUser(null);
+            setIsLoading(false);
+            return;
+        }
+
         try{
             const response = await apiService.getProfile();
-            setUser(response.user)
-            await wsService.connect();
+            setUser(response.user);
+            await wsService.connect().catch(() => undefined);
         } catch (error) {
-            console.log("Not authenticated");
+            setUser(null);
+        } finally {
             setIsLoading(false);
-        } 
-    }
-    const login = async (email: string, password: string): Promise<boolean> => {
+        }
+    }, []);
+
+    useEffect(()=> {
+        checkAuthStatus();
+    }, [checkAuthStatus])
+
+    const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+        setIsLoading(true);
+        if (MOCK_AUTH_ENABLED) {
+            setUser({
+                ...mockUser,
+                email: email.trim() || mockUser.email,
+            });
+            setIsLoading(false);
+            return true;
+        }
+
         try {
             const response = await apiService.Login(email, password);
             setUser(response.user);
-            await wsService.connect();
+            await wsService.connect().catch(() => undefined);
             return true;
         } catch (error) {
             console.error( error);
             return false;
+        } finally {
+            setIsLoading(false);
         }
-    }
-    const register = async (username: string, email: string, password: string): Promise<boolean> => {
+    }, []);
+
+    const register = useCallback(async (username: string, email: string, password: string): Promise<boolean> => {
+        setIsLoading(true);
+        if (MOCK_AUTH_ENABLED) {
+            setUser({
+                ...mockUser,
+                username: username.trim() || mockUser.username,
+                email: email.trim() || mockUser.email,
+            });
+            setIsLoading(false);
+            return true;
+        }
+
         try {
             const response = await apiService.Register(username, email, password);
             setUser(response.user);
-            await wsService.connect();
+            await wsService.connect().catch(() => undefined);
             return true;
         } catch (error) {
             console.error( error);
             return false;
+        } finally {
+            setIsLoading(false);
         }
-    }
-    const logout = async () => {
+    }, []);
+
+    const logout = useCallback(async () => {
+        setIsLoading(true);
+        if (MOCK_AUTH_ENABLED) {
+            setUser(null);
+            setIsLoading(false);
+            return;
+        }
+
         try {
             await apiService.Logout();
-            setUser(null);
-            await wsService.disconnect();
+            await wsService.disconnected();
         } catch (error) {
             console.error("Error logging out:", error);
+        } finally {
+            setUser(null);
+            setIsLoading(false);
         }
-    }
-    const value = {
+    }, []);
+
+    const value = useMemo(() => ({
         user,
-        isAuthenticated: !user,
+        isAuthenticated: !!user,
         isLoading,
         login,
         register,
         logout
-    };
+    }), [user, isLoading, login, register, logout]);
     return(
         <AuthContext.Provider value={value}>
             {children}

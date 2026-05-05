@@ -1,7 +1,30 @@
 export interface User {
     id: string;
-    name: string;
+    username: string;
     email: string;
+    createdAt?: string;
+}
+
+export interface ApiResponse<T = any> {
+    success: boolean;
+    data?: T;
+    error?: string;
+}
+
+export interface ChatRoom {
+    id: string;
+    name: string;
+    participants: User[];
+    createdAt: string;
+}
+
+export interface Message {
+    id: string;
+    roomId: string;
+    userId: string;
+    username: string;
+    text: string;
+    timestamp: Date;
 }
 
 export interface ChatMessage {
@@ -9,7 +32,7 @@ export interface ChatMessage {
     text: string;
     isUser: boolean;
     timestamp: Date;
-    UserName: string;
+    userName: string;
 }
 
 export interface ChatCategory {

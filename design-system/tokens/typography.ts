@@ -60,6 +60,12 @@ export const TextStyles = {
     lineHeight: lh(FontSizes.lg, LineHeights.normal), // 18 * 1.4 = 25
   },
 
+  subtitle: {
+    fontSize: FontSizes.md,
+    fontWeight: FontWeights.medium,
+    lineHeight: lh(FontSizes.md, LineHeights.normal),
+  },
+
   // Texto padrão do app
   body: {
     fontSize: FontSizes.md, // 16px

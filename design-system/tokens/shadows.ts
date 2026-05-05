@@ -130,3 +130,24 @@ export const ClayMorphismShadows = {
     dark: clayDark,
   },
 } as const;
+
+export const AppShadows = {
+  none: {},
+  sm: claySoft,
+  md: clayMedium,
+  lg: clayStrong,
+  glass: Platform.select({
+    ios: {
+      shadowColor: '#3E2A8F',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.12,
+      shadowRadius: 18,
+    },
+    android: {
+      elevation: 6,
+    },
+    web: {
+      boxShadow: '0 18px 40px rgba(47, 35, 117, 0.18)',
+    },
+  }) as ShadowStyle,
+} as const;

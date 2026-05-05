@@ -3,50 +3,47 @@ import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native'
 import { useTheme } from '../hooks/useTheme';
 import { getShadow } from '../tokens/shadows';
 
-export type InputVariant = 'default' | 'clay';
-
-interface InputProps extends TextInputProps {
+interface PillInputProps extends TextInputProps {
   label?: string;
   error?: string;
-  helperText?: string;
-  variant?: InputVariant;
 }
 
-export function Input({ label, error, helperText, style, ...props }: InputProps) {
-  const [isFocused, setIsFocused] = useState(false);
+export function PillInput({ label, error, style, ...props }: PillInputProps) {
+  const [focused, setFocused] = useState(false);
   const theme = useTheme();
-
   const styles = useMemo(() => StyleSheet.create({
     container: {
+      width: '100%',
       marginBottom: theme.spacing.lg,
     },
     label: {
-      color: isFocused ? theme.colors.primaryDark : theme.colors.textPrimary,
-      fontSize: 14,
-      fontWeight: '800',
+      color: '#FFFFFF',
+      fontSize: 13,
+      fontWeight: '900',
       marginBottom: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
     },
     input: {
-      minHeight: 54,
+      minHeight: 56,
       borderRadius: theme.radius.full,
       borderWidth: 1,
-      borderColor: error ? theme.colors.error : isFocused ? theme.colors.primaryLight : theme.colors.border,
-      backgroundColor: theme.colors.surface,
+      borderColor: error ? theme.colors.error : focused ? 'rgba(255,255,255,0.9)' : theme.colors.border,
+      backgroundColor: 'rgba(255,255,255,0.82)',
       color: theme.colors.textPrimary,
       fontSize: 16,
-      fontWeight: '600',
+      fontWeight: '700',
       paddingHorizontal: theme.spacing.xl,
       paddingVertical: theme.spacing.md,
       ...(getShadow(theme.shadows.glass)),
     },
-    helper: {
-      color: error ? theme.colors.error : theme.colors.textSecondary,
+    error: {
+      color: '#FFFFFF',
       fontSize: 12,
+      fontWeight: '700',
       marginTop: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
     },
-  }), [error, isFocused, theme]);
+  }), [error, focused, theme]);
 
   return (
     <View style={styles.container}>
@@ -55,16 +52,16 @@ export function Input({ label, error, helperText, style, ...props }: InputProps)
         {...props}
         placeholderTextColor={theme.colors.textTertiary}
         onBlur={(event) => {
-          setIsFocused(false);
+          setFocused(false);
           props.onBlur?.(event);
         }}
         onFocus={(event) => {
-          setIsFocused(true);
+          setFocused(true);
           props.onFocus?.(event);
         }}
         style={[styles.input, style]}
       />
-      {error || helperText ? <Text style={styles.helper}>{error || helperText}</Text> : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 }

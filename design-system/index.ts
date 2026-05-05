@@ -13,6 +13,7 @@ export * from './tokens/spacing';
 
 // Exporta sombras de claymorphism
 export * from './tokens/shadows';
+export * from './tokens/gradients';
 
 // =========================
 // TEMA E CONTEXTO
@@ -48,10 +49,6 @@ export type { InputVariant } from './components/Input';
 // Exporta o componente Card
 export { Card } from './components/Card';
 
-// Exporta o tipo das variantes do card
-export type { CardVariant } from './components/Card';
-
-
 // Exporta o tipo das variantes do Card (default, elevated, outlined)
 export type { CardVariant } from './components/Card';
 
@@ -60,6 +57,12 @@ export { ChatBubble } from './components/ChatBubble';
 
 // Exporta o tipo de posição da bolha (left | right)
 export type { ChatBubblePosition } from './components/ChatBubble';
+
+export { GradientBackground } from './components/GradientBackground';
+export { PillButton } from './components/PillButton';
+export { PillInput } from './components/PillInput';
+export { AnimalAvatar } from './components/AnimalAvatar';
+export { ChatHeader } from './components/ChatHeader';
 
 
 // =========================
