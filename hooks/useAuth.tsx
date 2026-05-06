@@ -1,6 +1,5 @@
 import React, {createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState}from "react";
 import { User } from "../constants/types";
-import { MOCK_AUTH_ENABLED, mockUser } from "../constants/mock";
 import { apiService } from "../services/api";
 import { wsService } from "../services/websocket";
 
@@ -19,12 +18,6 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
     const checkAuthStatus = useCallback(async () => {
         setIsLoading(true);
-        if (MOCK_AUTH_ENABLED) {
-            setUser(null);
-            setIsLoading(false);
-            return;
-        }
-
         try{
             const response = await apiService.getProfile();
             setUser(response.user);
@@ -42,15 +35,6 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
     const login = useCallback(async (email: string, password: string): Promise<boolean> => {
         setIsLoading(true);
-        if (MOCK_AUTH_ENABLED) {
-            setUser({
-                ...mockUser,
-                email: email.trim() || mockUser.email,
-            });
-            setIsLoading(false);
-            return true;
-        }
-
         try {
             const response = await apiService.Login(email, password);
             setUser(response.user);
@@ -66,16 +50,6 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
     const register = useCallback(async (username: string, email: string, password: string): Promise<boolean> => {
         setIsLoading(true);
-        if (MOCK_AUTH_ENABLED) {
-            setUser({
-                ...mockUser,
-                username: username.trim() || mockUser.username,
-                email: email.trim() || mockUser.email,
-            });
-            setIsLoading(false);
-            return true;
-        }
-
         try {
             const response = await apiService.Register(username, email, password);
             setUser(response.user);
@@ -91,12 +65,6 @@ export function AuthProvider({children}: {children: ReactNode}) {
 
     const logout = useCallback(async () => {
         setIsLoading(true);
-        if (MOCK_AUTH_ENABLED) {
-            setUser(null);
-            setIsLoading(false);
-            return;
-        }
-
         try {
             await apiService.Logout();
             await wsService.disconnected();

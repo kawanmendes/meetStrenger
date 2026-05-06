@@ -4,14 +4,13 @@ import { useRouter } from 'expo-router';
 import { AnimalAvatar, GradientBackground, PillButton, PillInput, useTheme } from '../../design-system';
 import { useAuth } from '../../hooks/useAuth';
 import { appImages } from '../../constants/assets';
-import { mockUser } from '../../constants/mock';
 
 export default function Login() {
   const router = useRouter();
   const theme = useTheme();
   const { login, isLoading } = useAuth();
-  const [email, setEmail] = useState(mockUser.email);
-  const [password, setPassword] = useState('mock123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const styles = useMemo(() => StyleSheet.create({
     container: {

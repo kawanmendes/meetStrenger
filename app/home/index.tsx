@@ -6,9 +6,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { appImages } from '../../constants/assets';
 
 const categories = [
-  { id: 'movies', name: 'Filmes', description: 'Cenas, favoritos e recomendacoes.', icon: 'MV' },
-  { id: 'gaming', name: 'Games', description: 'Partidas, ranks e proximos lancamentos.', icon: 'GG' },
-  { id: 'music', name: 'Musica', description: 'Playlists, artistas e shows.', icon: 'MS' },
+  { id: 'movies', name: 'Filmes', description: 'Cenas, favoritos e recomendacoes.', icon: '🎬' },
+  { id: 'gaming', name: 'Games', description: 'Partidas, ranks e proximos lancamentos.', icon: '🎮' },
+  { id: 'music', name: 'Musica', description: 'Playlists, artistas e shows.', icon: '🎵' },
 ];
 
 export default function Home() {
@@ -33,12 +33,12 @@ export default function Home() {
       marginLeft: theme.spacing.md,
     },
     hello: {
-      color: 'rgba(255,255,255,0.82)',
+      color: theme.colors.textSecondary,
       fontSize: 13,
       fontWeight: '800',
     },
     name: {
-      color: '#FFFFFF',
+      color: theme.colors.textPrimary,
       fontSize: 22,
       lineHeight: 27,
       fontWeight: '900',
@@ -57,14 +57,14 @@ export default function Home() {
       fontSize: 18,
     },
     title: {
-      color: '#FFFFFF',
+      color: theme.colors.textPrimary,
       fontSize: 30,
       lineHeight: 36,
       fontWeight: '900',
       marginBottom: theme.spacing.sm,
     },
     subtitle: {
-      color: 'rgba(255,255,255,0.82)',
+      color: theme.colors.textSecondary,
       fontSize: 15,
       fontWeight: '700',
       lineHeight: 22,

@@ -20,7 +20,7 @@ export default function Profile() {
       alignItems: 'center',
     },
     title: {
-      color: '#FFFFFF',
+      color: theme.colors.textPrimary,
       fontSize: 30,
       lineHeight: 36,
       fontWeight: '900',
@@ -28,7 +28,7 @@ export default function Profile() {
       textAlign: 'center',
     },
     email: {
-      color: 'rgba(255,255,255,0.82)',
+      color: theme.colors.textSecondary,
       fontSize: 14,
       fontWeight: '700',
       marginTop: theme.spacing.xs,

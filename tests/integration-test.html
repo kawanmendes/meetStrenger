@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 MeetStranger - Teste de Integração</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 25px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        
+        .test-section h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-section button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        
+        .test-section button:hover {
+            transform: scale(1.05);
+        }
+        
+        .test-section button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: scale(1);
+        }
+        
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+        }
+        
+        .result.success {
+            background: #e8f5e9;
+            color: #1b5e20;
+            border: 1px solid #81c784;
+            font-weight: bold;
+        }
+        
+        .result.error {
+            background: #ffebee;
+            color: #b71c1c;
+            border: 1px solid #e57373;
+            font-weight: bold;
+        }
+        
+        .result.info {
+            background: #e3f2fd;
+            color: #0d47a1;
+            border: 1px solid #64b5f6;
+            font-weight: bold;
+        }
+        
+        .stats {
+            background: #f0f4ff;
+            border: 1px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-item .number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-item .label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .spinner {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .badge.pass {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .badge.fail {
+            background: #f44336;
+            color: white;
+        }
+        
+        .badge.pending {
+            background: #ff9800;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 MeetStranger Integration Tests</h1>
+            <p>Validar integração completa: API REST + WebSocket + Auth</p>
+        </div>
+        
+        <div class="content">
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="number" id="passCount">0</div>
+                    <div class="label">Passaram</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="failCount">0</div>
+                    <div class="label">Falharam</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="totalTests">0</div>
+                    <div class="label">Total</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number" id="duration">0ms</div>
+                    <div class="label">Duração</div>
+                </div>
+            </div>
+            
+            <!-- Test 1: Health Check -->
+            <div class="test-section">
+                <h3>
+                    1️⃣ Health Check
+                    <span class="badge pending" id="badge-health">PENDING</span>
+                </h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Verifica se backend está online</p>
+                <button onclick="testHealthCheck()">Executar Teste</button>
+                <div class="result" id="result-health"></div>
+            </div>
+            
+            <!-- Test 2: Register -->
+            <div class="test-section">
+                <h3>
+                    2️⃣ User Registration
+                    <span class="badge pending" id="badge-register">PENDING</span>
+                </h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Registra novo usuário e retorna token JWT</p>
+                <button onclick="testRegister()">Executar Teste</button>
+                <div class="result" id="result-register"></div>
+            </div>
+            
+            <!-- Test 3: Login -->
+            <div class="test-section">
+                <h3>
+                    3️⃣ User Login
+                    <span class="badge pending" id="badge-login">PENDING</span>
+                </h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Faz login e valida token JWT</p>
+                <button onclick="testLogin()">Executar Teste</button>
+                <div class="result" id="result-login"></div>
+            </div>
+            
+            <!-- Test 4: Get Profile -->
+            <div class="test-section">
+                <h3>
+                    4️⃣ Get Profile (JWT Auth)
+                    <span class="badge pending" id="badge-profile">PENDING</span>
+                </h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Recupera perfil do usuário autenticado</p>
+                <button onclick="testGetProfile()">Executar Teste</button>
+                <div class="result" id="result-profile"></div>
+            </div>
+            
+            <!-- Test 5: Queue Stats -->
+            <div class="test-section">
+                <h3>
+                    5️⃣ Get Queue Stats
+                    <span class="badge pending" id="badge-stats">PENDING</span>
+                </h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Retorna estatísticas das filas de matching</p>
+                <button onclick="testQueueStats()">Executar Teste</button>
+                <div class="result" id="result-stats"></div>
+            </div>
+            
+            <!-- Test 6: WebSocket Connection -->
+            <div class="test-section">
+                <h3>
+                    6️⃣ WebSocket Connection
+                    <span class="badge pending" id="badge-ws">PENDING</span>
+                </h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Conecta ao servidor WebSocket em tempo real</p>
+                <button onclick="testWebSocket()">Executar Teste</button>
+                <div class="result" id="result-ws"></div>
+            </div>
+            
+            <!-- Test 7: Logout -->
+            <div class="test-section">
+                <h3>
+                    7️⃣ User Logout
+                    <span class="badge pending" id="badge-logout">PENDING</span>
+                </h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Faz logout e remove token</p>
+                <button onclick="testLogout()">Executar Teste</button>
+                <div class="result" id="result-logout"></div>
+            </div>
+            
+            <!-- Run All Tests -->
+            <div class="test-section" style="background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-color: #667eea;">
+                <h3>🚀 Executar Todos os Testes</h3>
+                <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Roda sequência completa de testes</p>
+                <button onclick="runAllTests()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 12px 24px; font-size: 15px;">
+                    ▶️ RUN ALL TESTS
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.8.3/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'https://meetstrenger-backend.onrender.com/api';
+        const WS_URL = 'https://meetstrenger-backend.onrender.com';
+        
+        let testData = {
+            email: null,
+            password: null,
+            token: null,
+            userId: null,
+        };
+        
+        let testStats = {
+            passed: 0,
+            failed: 0,
+            startTime: null,
+        };
+        
+        function updateStats() {
+            document.getElementById('passCount').textContent = testStats.passed;
+            document.getElementById('failCount').textContent = testStats.failed;
+            document.getElementById('totalTests').textContent = testStats.passed + testStats.failed;
+            if (testStats.startTime) {
+                const duration = Date.now() - testStats.startTime;
+                document.getElementById('duration').textContent = `${duration}ms`;
+            }
+        }
+        
+        function showResult(testId, message, isSuccess) {
+            const resultEl = document.getElementById(`result-${testId}`);
+            const badgeEl = document.getElementById(`badge-${testId}`);
+            
+            resultEl.textContent = message;
+            resultEl.classList.add('show');
+            resultEl.classList.add(isSuccess ? 'success' : 'error');
+            resultEl.classList.remove(isSuccess ? 'error' : 'success');
+            
+            badgeEl.textContent = isSuccess ? 'PASS ✓' : 'FAIL ✗';
+            badgeEl.classList.add(isSuccess ? 'pass' : 'fail');
+            badgeEl.classList.remove(isSuccess ? 'fail' : 'pass', 'pending');
+            
+            if (isSuccess) testStats.passed++;
+            else testStats.failed++;
+            
+            updateStats();
+        }
+        
+        async function testHealthCheck() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                if (!response.ok || !data.success) {
+                    throw new Error(data.error || 'Health check failed');
+                }
+                
+                const message = `✅ Backend Online\nDatabase: ${data.data.services.database}\nWebSocket: ${data.data.services.websocket}`;
+                showResult('health', message, true);
+            } catch (error) {
+                showResult('health', `❌ Error: ${error.message}`, false);
+            }
+        }
+        
+        async function testRegister() {
+            try {
+                const email = `test_${Date.now()}@example.com`;
+                const password = 'test123456';
+                const username = `testuser_${Date.now()}`;
+                
+                testData.email = email;
+                testData.password = password;
+                
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, username }),
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.data?.token) {
+                    throw new Error(data.error || 'Registration failed');
+                }
+                
+                testData.token = data.data.token;
+                testData.userId = data.data.user.id;
+                
+                const message = `✅ User Registered\nEmail: ${email}\nUsername: ${username}\nToken: ${data.data.token.substring(0, 20)}...`;
+                showResult('register', message, true);
+            } catch (error) {
+                showResult('register', `❌ Error: ${error.message}`, false);
+            }
+        }
+        
+        async function testLogin() {
+            try {
+                if (!testData.email || !testData.password) {
+                    throw new Error('No test credentials available');
+                }
+                
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: testData.email, password: testData.password }),
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.data?.token) {
+                    throw new Error(data.error || 'Login failed');
+                }
+                
+                testData.token = data.data.token;
+                
+                const message = `✅ Login Success\nUser: ${data.data.user.username}\nToken: ${data.data.token.substring(0, 20)}...`;
+                showResult('login', message, true);
+            } catch (error) {
+                showResult('login', `❌ Error: ${error.message}`, false);
+            }
+        }
+        
+        async function testGetProfile() {
+            try {
+                if (!testData.token) {
+                    throw new Error('No token available');
+                }
+                
+                const response = await fetch(`${API_URL}/auth/profile`, {
+                    headers: { 'Authorization': `Bearer ${testData.token}` },
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.data?.user) {
+                    throw new Error(data.error || 'Failed to get profile');
+                }
+                
+                const user = data.data.user;
+                const message = `✅ Profile Retrieved\nID: ${user.id}\nUsername: ${user.username}\nEmail: ${user.email}\nOnline: ${user.is_online}`;
+                showResult('profile', message, true);
+            } catch (error) {
+                showResult('profile', `❌ Error: ${error.message}`, false);
+            }
+        }
+        
+        async function testQueueStats() {
+            try {
+                if (!testData.token) {
+                    throw new Error('No token available');
+                }
+                
+                const response = await fetch(`${API_URL}/matching/stats`, {
+                    headers: { 'Authorization': `Bearer ${testData.token}` },
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data.data) {
+                    throw new Error(data.error || 'Failed to get stats');
+                }
+                
+                const stats = data.data;
+                const message = `✅ Queue Stats Retrieved\nMovies: ${stats.movies}\nGaming: ${stats.gaming}\nMusic: ${stats.music}\nStudy: ${stats.study}\nActive Rooms: ${stats.activeRooms}`;
+                showResult('stats', message, true);
+            } catch (error) {
+                showResult('stats', `❌ Error: ${error.message}`, false);
+            }
+        }
+        
+        async function testWebSocket() {
+            return new Promise(() => {
+                try {
+                    const socket = io(WS_URL, {
+                        reconnection: true,
+                        reconnectionDelay: 1000,
+                    });
+                    
+                    let connected = false;
+                    
+                    const timeout = setTimeout(() => {
+                        socket.disconnect();
+                        if (!connected) {
+                            showResult('ws', '❌ WebSocket connection timeout', false);
+                        }
+                    }, 5000);
+                    
+                    socket.on('connect', () => {
+                        connected = true;
+                        clearTimeout(timeout);
+                        
+                        // Tentar autenticar
+                        if (testData.token) {
+                            socket.emit('authenticate', { token: testData.token });
+                        }
+                        
+                        setTimeout(() => {
+                            const message = `✅ WebSocket Connected\nSocket ID: ${socket.id}\nTransport: ${socket.io.engine.transport.name}`;
+                            showResult('ws', message, true);
+                            socket.disconnect();
+                        }, 500);
+                    });
+                    
+                    socket.on('connect_error', (error) => {
+                        clearTimeout(timeout);
+                        showResult('ws', `❌ Error: ${error.message}`, false);
+                    });
+                    
+                    socket.on('authenticated', (data) => {
+                        console.log('✅ WebSocket authenticated:', data);
+                    });
+                    
+                    socket.on('auth-error', (error) => {
+                        console.error('❌ WebSocket auth error:', error);
+                    });
+                } catch (error) {
+                    showResult('ws', `❌ Error: ${error.message}`, false);
+                }
+            });
+        }
+        
+        async function testLogout() {
+            try {
+                if (!testData.token) {
+                    throw new Error('No token available');
+                }
+                
+                const response = await fetch(`${API_URL}/auth/logout`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${testData.token}` },
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Logout failed');
+                }
+                
+                testData.token = null;
+                const message = `✅ Logout Success`;
+                showResult('logout', message, true);
+            } catch (error) {
+                showResult('logout', `❌ Error: ${error.message}`, false);
+            }
+        }
+        
+        async function runAllTests() {
+            testStats.startTime = Date.now();
+            testStats.passed = 0;
+            testStats.failed = 0;
+            updateStats();
+            
+            await testHealthCheck();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testRegister();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testLogin();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testGetProfile();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testQueueStats();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testWebSocket();
+            await new Promise(r => setTimeout(r, 500));
+            
+            await testLogout();
+            
+            console.log('✅ All tests completed!');
+        }
+    </script>
+</body>
+</html>

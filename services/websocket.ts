@@ -25,19 +25,22 @@ class WebSocketService {
             });
             
             this.socket!.on('authenticated', (data: { userId: string }) => {
-                console.log(data.userId);
+                console.log('Authenticated as userId:', data.userId);
+            });
+
+            this.socket!.on('auth-error', (error: any) => {
+                console.error('WebSocket auth error:', error);
+                reject(new Error(error?.error || 'Auth failed'));
             });
             
             this.socket!.on('connect_error', (error: Error) => {
-                reject(error);
-            });
-            
-            this.socket!.on('auth_error', (error: Error) => {
+                console.error('WebSocket connect error:', error);
                 reject(error);
             });
             
             this.socket!.on('disconnect', () => {
                 this.isConnected = false;
+                console.log('WebSocket disconnected');
             });
         });
     }
@@ -52,39 +55,59 @@ class WebSocketService {
     
     // Métodos para chat room
     joinRoom(roomId: string): void { 
-        this.socket?.emit('join-Room', { roomId }); 
+        this.socket?.emit('join-room', { roomId }); 
     }
     
     leaveRoom(roomId: string): void { 
-        this.socket?.emit('leave-Room', { roomId }); 
+        this.socket?.emit('leave-room', { roomId }); 
     }
     
-    sendMessage(roomId: string, message: string): void { 
-        this.socket?.emit('send-Message', { roomId, message }); 
+    sendMessage(text: string): void { 
+        this.socket?.emit('send-message', { text }); 
     }
     
     onMessage(callback: (message: any) => void): void { 
-        this.socket?.on('new-Message', callback); 
+        this.socket?.on('new-message', callback); 
     }
     
-    onUserJoined(callback: (user: any) => void): void { 
-        this.socket?.on('user-Joined', callback); 
-    }
-    
-    onUserLeft(callback: (data: any) => void): void { 
-        this.socket?.on('user-Left', callback); 
+    onQueueStatus(callback: (data: any) => void): void { 
+        this.socket?.on('queue-status', callback); 
     }
     
     onMatchingFound(callback: (room: any) => void): void { 
-        this.socket?.on('matching-Found', callback); 
+        this.socket?.on('match-found', callback); 
     }
 
-    findMatch(category: string[]): void { 
-        this.socket?.emit('find-Match', { category }); 
+    onMatchingCancelled(callback: (data: any) => void): void { 
+        this.socket?.on('matching-cancelled', callback); 
+    }
+
+    onPartnerTyping(callback: (data: any) => void): void { 
+        this.socket?.on('partner-typing', callback); 
+    }
+
+    onPartnerLeft(callback: (data: any) => void): void { 
+        this.socket?.on('partner-left', callback); 
+    }
+
+    onPartnerDisconnected(callback: (data: any) => void): void { 
+        this.socket?.on('partner-disconnected', callback); 
+    }
+
+    findMatch(category: string): void { 
+        this.socket?.emit('find-match', { category }); 
     }
 
     cancelMatch(): void {
-        this.socket?.emit('cancel-Match');
+        this.socket?.emit('cancel-matching');
+    }
+
+    typingStart(): void {
+        this.socket?.emit('typing-start');
+    }
+
+    typingStop(): void {
+        this.socket?.emit('typing-stop');
     }
 
     removeAllListeners(): void {

@@ -3,7 +3,6 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AnimalAvatar, GradientBackground, PillButton, useTheme } from '../design-system';
 import { appImages } from '../constants/assets';
-import { mockUser } from '../constants/mock';
 import { useAuth } from '../hooks/useAuth';
 
 export default function WelcomeScreen() {
@@ -30,14 +29,14 @@ export default function WelcomeScreen() {
       borderRadius: theme.radius.full,
     },
     title: {
-      color: '#FFFFFF',
+      color: theme.colors.textPrimary,
       fontSize: 34,
       lineHeight: 40,
       fontWeight: '900',
       textAlign: 'center',
     },
     subtitle: {
-      color: 'rgba(255,255,255,0.86)',
+      color: theme.colors.textSecondary,
       fontSize: 16,
       lineHeight: 23,
       fontWeight: '700',
@@ -50,10 +49,6 @@ export default function WelcomeScreen() {
     },
   }), [theme]);
 
-  const enterWithMockUser = async () => {
-    await login(mockUser.email, 'mock123');
-    router.replace('/home');
-  };
 
   return (
     <GradientBackground variant="bubbles">
@@ -65,7 +60,6 @@ export default function WelcomeScreen() {
         </View>
 
         <View style={styles.actions}>
-          <PillButton title="Entrar como teste" variant="primary" onPress={enterWithMockUser} />
           <PillButton title="Entrar" variant="primary" onPress={() => router.push('/auth/login')} />
           <PillButton title="Criar conta" onPress={() => router.push('/auth/register')} />
         </View>
