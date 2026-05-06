@@ -2,8 +2,19 @@ import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AnimalAvatar, GradientBackground, PillButton, useTheme } from '../../design-system';
+import { appImages } from '../../constants/assets';
 
-const avatars = ['FX', 'BR', 'PN', 'KO', 'CT', 'DR'];
+const avatars = [
+  { id: '1', image: appImages.perfil1, name: 'Avatar 1' },
+  { id: '2', image: appImages.perfil2, name: 'Avatar 2' },
+  { id: '3', image: appImages.perfil3, name: 'Avatar 3' },
+  { id: '4', image: appImages.perfil4, name: 'Avatar 4' },
+  { id: '5', image: appImages.perfil5, name: 'Avatar 5' },
+  { id: '6', image: appImages.perfil6, name: 'Avatar 6' },
+  { id: '7', image: appImages.perfil7, name: 'Avatar 7' },
+  { id: '8', image: appImages.perfil8, name: 'Avatar 8' },
+  { id: '9', image: appImages.perfil9, name: 'Avatar 9' },
+];
 
 export default function AvatarShop() {
   const router = useRouter();
@@ -58,9 +69,9 @@ export default function AvatarShop() {
         <Text style={styles.subtitle}>Estrutura pronta para receber PNG/SVG exportados do prototipo.</Text>
         <ScrollView contentContainerStyle={styles.grid}>
           {avatars.map((avatar) => (
-            <View key={avatar} style={styles.item}>
-              <AnimalAvatar animal={avatar} size={86} />
-              <Text style={styles.label}>{avatar}</Text>
+            <View key={avatar.id} style={styles.item}>
+              <AnimalAvatar source={avatar.image} size={86} />
+              <Text style={styles.label}>{avatar.name}</Text>
             </View>
           ))}
         </ScrollView>
