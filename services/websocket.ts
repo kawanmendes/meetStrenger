@@ -1,121 +1,433 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_CONFIG } from './config';
 import { io, Socket } from 'socket.io-client';
+
+import { API_CONFIG } from './config';
 
 class WebSocketService {
     public socket: Socket | null = null;
-    private isConnected = false;
-    
-    async connect(): Promise<void> {
-        const token = await AsyncStorage.getItem('authToken');
-        this.socket = io(API_CONFIG.SOCKET_URL, {
-            auth: { token },
-            transports: ['websocket']
-        });
-        
-        return new Promise((resolve, reject) => {
-            this.socket!.on('connect', () => {
-                this.isConnected = true;
-                console.log('WebSocket connected');
 
-                if(token) {
-                    this.socket!.emit('authenticate', { token });
+    private isConnected = false;
+
+    private isAuthenticated = false;
+
+    // =========================
+    // GETTERS
+    // =========================
+
+    get connected(): boolean {
+        return this.isConnected;
+    }
+
+    get authenticated(): boolean {
+        return this.isAuthenticated;
+    }
+
+    // =========================
+    // CONNECTION
+    // =========================
+
+    async connect(): Promise<void> {
+
+        // evita conexão duplicada
+        if (this.socket?.connected) {
+            console.log('[WS] Socket already connected');
+            return;
+        }
+
+        // limpa socket anterior
+        if (this.socket) {
+
+            console.log('[WS] Cleaning previous socket');
+
+            this.socket.removeAllListeners();
+
+            this.socket.disconnect();
+
+            this.socket = null;
+        }
+
+        const token = await AsyncStorage.getItem('authToken');
+
+        this.socket = io(API_CONFIG.SOCKET_URL, {
+            auth: {
+                token,
+            },
+
+            transports: ['websocket'],
+
+            autoConnect: true,
+
+            reconnection: true,
+
+            reconnectionAttempts: 5,
+
+            reconnectionDelay: 1000,
+        });
+
+        return new Promise((resolve, reject) => {
+
+            // =========================
+            // CONNECT
+            // =========================
+
+            this.socket!.once('connect', () => {
+
+                console.log('[WS] Connected');
+
+                this.isConnected = true;
+
+                if (token) {
+
+                    console.log('[WS] Authenticating...');
+
+                    this.socket!.emit('authenticate', {
+                        token,
+                    });
+
+                } else {
+
+                    reject(new Error('No auth token found'));
                 }
+            });
+
+            // =========================
+            // AUTH SUCCESS
+            // =========================
+
+            this.socket!.once(
+                'authenticated',
+                (data: { userId: string }) => {
+
+                    console.log(
+                        '[WS] Authenticated:',
+                        data.userId
+                    );
+
+                    this.isAuthenticated = true;
+
+                    resolve();
+                }
+            );
+
+            // =========================
+            // AUTH ERROR
+            // =========================
+
+            this.socket!.once('auth-error', (error: any) => {
+
+                console.error(
+                    '[WS] Auth error:',
+                    error
+                );
+
+                this.isAuthenticated = false;
+
+                reject(
+                    new Error(
+                        error?.error || 'Authentication failed'
+                    )
+                );
+            });
+
+            // =========================
+            // CONNECT ERROR
+            // =========================
+
+            this.socket!.once(
+                'connect_error',
+                (error: Error) => {
+
+                    console.error(
+                        '[WS] Connection error:',
+                        error
+                    );
+
+                    this.isConnected = false;
+
+                    reject(error);
+                }
+            );
+
+            // =========================
+            // DISCONNECT
+            // =========================
+
+            this.socket!.on('disconnect', (reason) => {
+
+                console.log(
+                    '[WS] Disconnected:',
+                    reason
+                );
+
+                this.isConnected = false;
+
+                this.isAuthenticated = false;
+            });
+        });
+    }
+
+    // =========================
+    // WAIT FOR CONNECTION
+    // =========================
+
+    async waitForConnection(
+        timeout = 5000
+    ): Promise<void> {
+
+        if (this.isConnected) {
+            return;
+        }
+
+        return new Promise((resolve, reject) => {
+
+            const timer = setTimeout(() => {
+
+                reject(
+                    new Error(
+                        'WebSocket connection timeout'
+                    )
+                );
+
+            }, timeout);
+
+            this.socket?.once('connect', () => {
+
+                clearTimeout(timer);
+
+                console.log(
+                    '[WS] waitForConnection resolved'
+                );
+
+                this.isConnected = true;
+
                 resolve();
             });
-            
-            this.socket!.on('authenticated', (data: { userId: string }) => {
-                console.log('Authenticated as userId:', data.userId);
-            });
 
-            this.socket!.on('auth-error', (error: any) => {
-                console.error('WebSocket auth error:', error);
-                reject(new Error(error?.error || 'Auth failed'));
-            });
-            
-            this.socket!.on('connect_error', (error: Error) => {
-                console.error('WebSocket connect error:', error);
-                reject(error);
-            });
-            
-            this.socket!.on('disconnect', () => {
-                this.isConnected = false;
-                console.log('WebSocket disconnected');
-            });
+            this.socket?.once(
+                'connect_error',
+                (error) => {
+
+                    clearTimeout(timer);
+
+                    reject(error);
+                }
+            );
         });
     }
-    
-    disconnected(): void {
-        if(this.socket) {
+
+    // =========================
+    // DISCONNECT
+    // =========================
+
+    disconnect(): void {
+
+        console.log('[WS] Disconnecting...');
+
+        if (this.socket) {
+
+            this.removeAppListeners();
+
             this.socket.disconnect();
+
             this.socket = null;
-            this.isConnected = false;
         }
-    }
-    
-    // Métodos para chat room
-    joinRoom(roomId: string): void { 
-        this.socket?.emit('join-room', { roomId }); 
-    }
-    
-    leaveRoom(roomId: string): void { 
-        this.socket?.emit('leave-room', { roomId }); 
-    }
-    
-    sendMessage(text: string): void { 
-        this.socket?.emit('send-message', { text }); 
-    }
-    
-    onMessage(callback: (message: any) => void): void { 
-        this.socket?.on('new-message', callback); 
-    }
-    
-    onQueueStatus(callback: (data: any) => void): void { 
-        this.socket?.on('queue-status', callback); 
-    }
-    
-    onMatchingFound(callback: (room: any) => void): void { 
-        this.socket?.on('match-found', callback); 
+
+        this.isConnected = false;
+
+        this.isAuthenticated = false;
     }
 
-    onMatchingCancelled(callback: (data: any) => void): void { 
-        this.socket?.on('matching-cancelled', callback); 
+    // =========================
+    // REMOVE APP LISTENERS
+    // =========================
+
+    removeAppListeners(): void {
+
+        const events = [
+            'new-message',
+            'queue-status',
+            'match-found',
+            'matching-cancelled',
+            'partner-typing',
+            'partner-left',
+            'partner-disconnected',
+            'room-joined',
+            'error',
+        ];
+
+        events.forEach((event) => {
+
+            this.socket?.off(event);
+        });
     }
 
-    onPartnerTyping(callback: (data: any) => void): void { 
-        this.socket?.on('partner-typing', callback); 
-    }
+    // =========================
+    // MATCHMAKING
+    // =========================
 
-    onPartnerLeft(callback: (data: any) => void): void { 
-        this.socket?.on('partner-left', callback); 
-    }
+    findMatch(category: string): void {
 
-    onPartnerDisconnected(callback: (data: any) => void): void { 
-        this.socket?.on('partner-disconnected', callback); 
-    }
+        console.log(
+            '[WS] Finding match:',
+            category
+        );
 
-    findMatch(category: string): void { 
-        this.socket?.emit('find-match', { category }); 
+        this.socket?.emit('find-match', {
+            category,
+        });
     }
 
     cancelMatch(): void {
+
+        console.log('[WS] Cancel match');
+
         this.socket?.emit('cancel-matching');
     }
 
+    // =========================
+    // ROOM
+    // =========================
+
+    joinRoom(roomId: string): void {
+
+        console.log(
+            '[WS] Joining room:',
+            roomId
+        );
+
+        this.socket?.emit('join-room', {
+            roomId,
+        });
+    }
+
+    leaveRoom(roomId: string): void {
+
+        console.log(
+            '[WS] Leaving room:',
+            roomId
+        );
+
+        this.socket?.emit('leave-room', {
+            roomId,
+        });
+    }
+
+    // =========================
+    // MESSAGES
+    // =========================
+
+    sendMessage(
+        roomId: string,
+        text: string
+    ): void {
+
+        console.log(
+            '[WS] Sending message:',
+            text
+        );
+
+        this.socket?.emit('send-message', {
+            roomId,
+            text,
+        });
+    }
+
+    // =========================
+    // TYPING
+    // =========================
+
     typingStart(): void {
+
         this.socket?.emit('typing-start');
     }
 
     typingStop(): void {
+
         this.socket?.emit('typing-stop');
     }
 
-    removeAllListeners(): void {
-        this.socket?.removeAllListeners();
+    // =========================
+    // LISTENERS
+    // =========================
+
+    onMessage(
+        callback: (message: any) => void
+    ): void {
+
+        this.socket?.on(
+            'new-message',
+            callback
+        );
     }
-    
-    get connected(): boolean {
-        return this.isConnected;
+
+    onQueueStatus(
+        callback: (data: any) => void
+    ): void {
+
+        this.socket?.on(
+            'queue-status',
+            callback
+        );
+    }
+
+    onMatchingFound(
+        callback: (room: any) => void
+    ): void {
+
+        this.socket?.on(
+            'match-found',
+            callback
+        );
+    }
+
+    onMatchingCancelled(
+        callback: (data: any) => void
+    ): void {
+
+        this.socket?.on(
+            'matching-cancelled',
+            callback
+        );
+    }
+
+    onPartnerTyping(
+        callback: (data: any) => void
+    ): void {
+
+        this.socket?.on(
+            'partner-typing',
+            callback
+        );
+    }
+
+    onPartnerLeft(
+        callback: (data: any) => void
+    ): void {
+
+        this.socket?.on(
+            'partner-left',
+            callback
+        );
+    }
+
+    onPartnerDisconnected(
+        callback: (data: any) => void
+    ): void {
+
+        this.socket?.on(
+            'partner-disconnected',
+            callback
+        );
+    }
+
+    onError(
+        callback: (error: any) => void
+    ): void {
+
+        this.socket?.on(
+            'error',
+            callback
+        );
     }
 }
 
