@@ -2,308 +2,544 @@ import {
     useCallback,
     useEffect,
     useMemo,
+    useRef,
     useState,
 } from 'react';
+
 import { ChatMessage } from '../constants/types';
+
 import { wsService } from '../services/websocket';
+
 export function useChat(category: string) {
+
     // =========================
     // STATES
     // =========================
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [isConnected, setIsConnected] = useState(false);
-    const [isMatching, setIsMatching] = useState(false);
+
+    const [messages, setMessages] =
+        useState<ChatMessage[]>([]);
+
+    const [isConnected, setIsConnected] =
+        useState(false);
+
+    const [isMatching, setIsMatching] =
+        useState(false);
+
     const [currentRoomId, setCurrentRoomId] =
         useState<string | null>(null);
+
     const [partnerName, setPartnerName] =
         useState('procurando...');
+
     const [queuePosition, setQueuePosition] =
         useState<number | null>(null);
+
     const [estimatedWait, setEstimatedWait] =
         useState('');
+
     const [partnerTyping, setPartnerTyping] =
         useState(false);
-    // ========================
+
+    // =========================
+    // MATCH LOCK
+    // =========================
+
+    const matchStarted =
+        useRef(false);
+
+    // =========================
     // MESSAGE HANDLER
     // =========================
-    const handleNewMessage = useCallback(
-        (data: any) => {
-            console.log(
-                '[CHAT] New message:',
-                data
-            );
-            const newMessage: ChatMessage = {
-                id: data.id || `${Date.now()}`,
-                text: data.text,
-                isUser: false,
-                timestamp: new Date(
-                    data.timestamp
-                ),
-                userName:
-                    data.username ||
-                    'desconhecido',
-            };
-            setMessages((prev) => [
-                ...prev,
-                newMessage,
-            ]);
-        },
-        []
-    );
+
+    const handleNewMessage =
+        useCallback(
+            (data: any) => {
+
+                console.log(
+                    '[CHAT] New message:',
+                    data
+                );
+
+                const newMessage: ChatMessage = {
+                    id:
+                        data.id ||
+                        `${Date.now()}`,
+
+                    text: data.text,
+
+                    isUser: false,
+
+                    timestamp:
+                        new Date(
+                            data.timestamp
+                        ),
+
+                    userName:
+                        data.username ||
+                        'desconhecido',
+                };
+
+                setMessages(
+                    (prev) => [
+                        ...prev,
+                        newMessage,
+                    ]
+                );
+            },
+            []
+        );
+
     // =========================
     // MATCH FOUND
     // =========================
-    const handleMatchFound = useCallback(
-        (data: any) => {
-            console.log(
-                '[CHAT] Match found:',
-                data
-            );
-            setCurrentRoomId(data.roomId);
-            setIsConnected(true);
-            setIsMatching(false);
-            setMessages([]);
-            setPartnerName(
-                data.partner?.username ||
-                'usuário'
-            );
-            setQueuePosition(null);
-            setEstimatedWait('');
-            wsService.joinRoom(data.roomId);
-        },
-        []
-    );
+
+    const handleMatchFound =
+        useCallback(
+            (data: any) => {
+
+                console.log(
+                    '[CHAT] Match found:',
+                    data
+                );
+
+                setCurrentRoomId(
+                    data.roomId
+                );
+
+                setIsConnected(true);
+
+                setIsMatching(false);
+
+                setMessages([]);
+
+                setPartnerName(
+                    data.partner
+                        ?.username ||
+                        'usuário'
+                );
+
+                setQueuePosition(
+                    null
+                );
+
+                setEstimatedWait('');
+
+                // backend já faz socket.join()
+                // NÃO chamar:
+                // wsService.joinRoom(data.roomId);
+
+                matchStarted.current =
+                    false;
+            },
+            []
+        );
+
     // =========================
     // QUEUE STATUS
     // =========================
-    const handleQueueStatus = useCallback(
-        (data: any) => {
-            console.log(
-                '[CHAT] Queue status:',
-                data
-            );
-            setQueuePosition(
-                data.position || 1
-            );
-            setEstimatedWait(
-                data.estimatedWait || '...'
-            );
-        },
-        []
-    );
+
+    const handleQueueStatus =
+        useCallback(
+            (data: any) => {
+
+                console.log(
+                    '[CHAT] Queue status:',
+                    data
+                );
+
+                setQueuePosition(
+                    data.position || 1
+                );
+
+                setEstimatedWait(
+                    data.estimatedWait ||
+                        '...'
+                );
+            },
+            []
+        );
+
     // =========================
     // MATCH CANCELLED
     // =========================
+
     const handleMatchingCancelled =
         useCallback(() => {
+
             console.log(
                 '[CHAT] Matching cancelled'
             );
+
             setIsMatching(false);
-            setQueuePosition(null);
+
+            setQueuePosition(
+                null
+            );
+
             setEstimatedWait('');
+
+            matchStarted.current =
+                false;
         }, []);
+
     // =========================
     // PARTNER TYPING
     // =========================
+
     const handlePartnerTyping =
-        useCallback((data: any) => {
-            console.log(
-                '[CHAT] Partner typing:',
-                data
-            );
-            setPartnerTyping(
-                data.isTyping || false
-            );
-        }, []);
+        useCallback(
+            (data: any) => {
+
+                console.log(
+                    '[CHAT] Partner typing:',
+                    data
+                );
+
+                setPartnerTyping(
+                    data.isTyping ||
+                        false
+                );
+            },
+            []
+        );
+
     // =========================
     // PARTNER LEFT
     // =========================
+
     const handlePartnerLeft =
-        useCallback((data: any) => {
-            console.log(
-                '[CHAT] Partner left:',
-                data
-            );
-            setIsConnected(false);
-            setCurrentRoomId(null);
-            setMessages([]);
-            setPartnerName(
-                'procurando...'
-            );
-        }, []);
-    // =========================
-    // PARTNER DISCONNECTED
-    // =========================
-    const handlePartnerDisconnected =
-        useCallback((data: any) => {
-            console.log(
-                '[CHAT] Partner disconnected:',
-                data
-            );
-            setIsConnected(false);
-            setCurrentRoomId(null);
-            setMessages([]);
-            setPartnerName(
-                'procurando...'
-            );
-        }, []);
-    // =========================
-    // SOCKET ERROR
-    // =========================
-    const handleSocketError =
-        useCallback((error: any) => {
-            console.error(
-                '[CHAT] Socket error:',
-                error
-            );
-            setIsMatching(false);
-        }, []);
-    // =========================
-    // START MATCH
-    // =========================
-    const startMatch = useCallback(
-        async () => {
-            try {
+        useCallback(
+            (data: any) => {
+
                 console.log(
-                    '[CHAT] Starting match...'
+                    '[CHAT] Partner left:',
+                    data
                 );
-                setIsMatching(true);
+
+                setIsConnected(
+                    false
+                );
+
+                setCurrentRoomId(
+                    null
+                );
+
+                setMessages([]);
+
                 setPartnerName(
                     'procurando...'
                 );
-                await wsService.waitForConnection();
-                wsService.findMatch(category);
-            } catch (error) {
+
+                setIsMatching(
+                    false
+                );
+
+                matchStarted.current =
+                    false;
+            },
+            []
+        );
+
+    // =========================
+    // PARTNER DISCONNECTED
+    // =========================
+
+    const handlePartnerDisconnected =
+        useCallback(
+            (data: any) => {
+
+                console.log(
+                    '[CHAT] Partner disconnected:',
+                    data
+                );
+
+                setIsConnected(
+                    false
+                );
+
+                setCurrentRoomId(
+                    null
+                );
+
+                setMessages([]);
+
+                setPartnerName(
+                    'procurando...'
+                );
+
+                setIsMatching(
+                    false
+                );
+
+                matchStarted.current =
+                    false;
+            },
+            []
+        );
+
+    // =========================
+    // SOCKET ERROR
+    // =========================
+
+    const handleSocketError =
+        useCallback(
+            (error: any) => {
+
                 console.error(
-                    '[CHAT] Match error:',
+                    '[CHAT] Socket error:',
                     error
                 );
-                setIsMatching(false);
-            }
-        },
-        [category]
-    );
+
+                setIsMatching(
+                    false
+                );
+
+                matchStarted.current =
+                    false;
+            },
+            []
+        );
+
+    // =========================
+    // START MATCH
+    // =========================
+
+    const startMatch =
+        useCallback(
+            async () => {
+
+                // evita múltiplos find-match
+                if (
+                    isMatching ||
+                    matchStarted.current
+                ) {
+
+                    console.log(
+                        '[CHAT] Match already started'
+                    );
+
+                    return;
+                }
+
+                try {
+
+                    console.log(
+                        '[CHAT] Starting match...'
+                    );
+
+                    matchStarted.current =
+                        true;
+
+                    setIsMatching(
+                        true
+                    );
+
+                    setPartnerName(
+                        'procurando...'
+                    );
+
+                    await wsService.waitForConnection();
+
+                    wsService.findMatch(
+                        category
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        '[CHAT] Match error:',
+                        error
+                    );
+
+                    setIsMatching(
+                        false
+                    );
+
+                    matchStarted.current =
+                        false;
+                }
+            },
+            [
+                category,
+                isMatching,
+            ]
+        );
+
     // =========================
     // CANCEL MATCH
     // =========================
-    const cancelMatch = useCallback(() => {
-        console.log(
-            '[CHAT] Cancel match'
-        );
-        setIsMatching(false);
-        wsService.cancelMatch();
-    }, []);
+
+    const cancelMatch =
+        useCallback(() => {
+
+            console.log(
+                '[CHAT] Cancel match'
+            );
+
+            setIsMatching(
+                false
+            );
+
+            matchStarted.current =
+                false;
+
+            wsService.cancelMatch();
+
+        }, []);
+
     // =========================
     // SEND MESSAGE
     // =========================
-    const sendMessage = useCallback(
-        (text: string) => {
-            if (
-                !currentRoomId ||
-                !text.trim()
-            ) {
-                return;
-            }
-            const newMessage: ChatMessage = {
-                id: `${Date.now()}`,
-                text: text.trim(),
-                isUser: true,
-                timestamp: new Date(),
-                userName: 'Você',
-            };
-            setMessages((prev) => [
-                ...prev,
-                newMessage,
-            ]);
-            wsService.sendMessage(
-                currentRoomId,
-                text.trim()
-            );
-        },
-        [currentRoomId]
-    );
+
+    const sendMessage =
+        useCallback(
+            (text: string) => {
+
+                if (
+                    !currentRoomId ||
+                    !text.trim()
+                ) {
+                    return;
+                }
+
+                const newMessage: ChatMessage = {
+                    id:
+                        `${Date.now()}`,
+
+                    text:
+                        text.trim(),
+
+                    isUser: true,
+
+                    timestamp:
+                        new Date(),
+
+                    userName:
+                        'Você',
+                };
+
+                setMessages(
+                    (prev) => [
+                        ...prev,
+                        newMessage,
+                    ]
+                );
+
+                wsService.sendMessage(
+                    currentRoomId,
+                    text.trim()
+                );
+            },
+            [currentRoomId]
+        );
+
     // =========================
     // REGISTER LISTENERS
-    // RODA APENAS UMA VEZ
     // =========================
+
     useEffect(() => {
+
         console.log(
             '[CHAT] Registering listeners'
         );
+
         wsService.onMessage(
             handleNewMessage
         );
+
         wsService.onMatchingFound(
             handleMatchFound
         );
+
         wsService.onQueueStatus(
             handleQueueStatus
         );
+
         wsService.onMatchingCancelled(
             handleMatchingCancelled
         );
+
         wsService.onPartnerTyping(
             handlePartnerTyping
         );
+
         wsService.onPartnerLeft(
             handlePartnerLeft
         );
+
         wsService.onPartnerDisconnected(
             handlePartnerDisconnected
         );
+
         wsService.onError(
             handleSocketError
         );
+
         return () => {
+
             console.log(
                 '[CHAT] Removing listeners'
             );
+
             wsService.removeAppListeners();
         };
+
     }, []);
+
     // =========================
-    // START MATCH EFFECT
+    // AUTO START MATCH
     // =========================
+
     useEffect(() => {
-        const initializeMatch =
-            async () => {
-                if (
-                    wsService.connected &&
-                    !currentRoomId &&
-                    !isMatching
-                ) {
-                    console.log(
-                        '[CHAT] Auto start match'
-                    );
-                    await startMatch();
+
+        if (
+            wsService.connected &&
+            !currentRoomId &&
+            !isMatching &&
+            !matchStarted.current
+        ) {
+
+            console.log(
+                '[CHAT] Auto starting match'
+            );
+
+            startMatch().catch(
+                () => {
+
+                    matchStarted.current =
+                        false;
                 }
-            };
-        initializeMatch();
+            );
+        }
+
     }, [
         currentRoomId,
         isMatching,
         startMatch,
     ]);
+
     // =========================
-    // ROOM CLEANUP
+    // RESET LOCK
     // =========================
+
     useEffect(() => {
-        return () => {
-            if (currentRoomId) {
-                console.log(
-                    '[CHAT] Leaving room:',
-                    currentRoomId
-                );
-                wsService.leaveRoom(
-                    currentRoomId
-                );
-            }
-        };
+
+        if (currentRoomId) {
+
+            console.log(
+                '[CHAT] Match found, resetting lock'
+            );
+
+            matchStarted.current =
+                false;
+        }
+
     }, [currentRoomId]);
+
     // =========================
     // MEMO
     // =========================
+
     return useMemo(
         () => ({
             messages,

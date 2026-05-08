@@ -4,11 +4,17 @@ import { io, Socket } from 'socket.io-client';
 import { API_CONFIG } from './config';
 
 class WebSocketService {
+
     public socket: Socket | null = null;
 
     private isConnected = false;
 
     private isAuthenticated = false;
+
+    // =========================
+    // CONNECTION LOCK
+    // =========================
+    private isConnecting = false;
 
     // =========================
     // GETTERS
@@ -23,128 +29,108 @@ class WebSocketService {
     }
 
     // =========================
-    // CONNECTION
+    // CONNECT
     // =========================
 
     async connect(): Promise<void> {
 
-        // evita conexão duplicada
-        if (this.socket?.connected) {
-            console.log('[WS] Socket already connected');
+        // já conectado
+        if (
+            this.socket?.connected &&
+            this.isAuthenticated
+        ) {
+
+            console.log(
+                '[WS] Already connected'
+            );
+
             return;
         }
 
-        // limpa socket anterior
-        if (this.socket) {
+        // já conectando
+        if (this.isConnecting) {
 
-            console.log('[WS] Cleaning previous socket');
+            console.log(
+                '[WS] Connection already in progress'
+            );
 
-            this.socket.removeAllListeners();
-
-            this.socket.disconnect();
-
-            this.socket = null;
+            return this.waitForConnection();
         }
 
-        const token = await AsyncStorage.getItem('authToken');
+        this.isConnecting = true;
 
-        this.socket = io(API_CONFIG.SOCKET_URL, {
-            auth: {
-                token,
-            },
+        try {
 
-            transports: ['websocket'],
+            // limpa socket antigo
+            if (this.socket) {
 
-            autoConnect: true,
+                console.log(
+                    '[WS] Cleaning old socket'
+                );
 
-            reconnection: true,
+                this.socket.removeAllListeners();
 
-            reconnectionAttempts: 5,
+                this.socket.disconnect();
 
-            reconnectionDelay: 1000,
-        });
+                this.socket = null;
+            }
 
-        return new Promise((resolve, reject) => {
+            const token =
+                await AsyncStorage.getItem(
+                    'authToken'
+                );
 
-            // =========================
-            // CONNECT
-            // =========================
+            if (!token) {
 
-            this.socket!.once('connect', () => {
+                throw new Error(
+                    'No auth token found'
+                );
+            }
 
-                console.log('[WS] Connected');
+            console.log(
+                '[WS] Creating socket connection'
+            );
 
-                this.isConnected = true;
-
-                if (token) {
-
-                    console.log('[WS] Authenticating...');
-
-                    this.socket!.emit('authenticate', {
+            // cria socket
+            this.socket = io(
+                API_CONFIG.SOCKET_URL,
+                {
+                    auth: {
                         token,
-                    });
+                    },
 
-                } else {
+                    transports: ['websocket'],
 
-                    reject(new Error('No auth token found'));
-                }
-            });
+                    autoConnect: true,
 
-            // =========================
-            // AUTH SUCCESS
-            // =========================
+                    reconnection: true,
 
-            this.socket!.once(
-                'authenticated',
-                (data: { userId: string }) => {
+                    reconnectionAttempts: 5,
 
-                    console.log(
-                        '[WS] Authenticated:',
-                        data.userId
-                    );
-
-                    this.isAuthenticated = true;
-
-                    resolve();
+                    reconnectionDelay: 1000,
                 }
             );
 
             // =========================
-            // AUTH ERROR
+            // RECONNECT
             // =========================
 
-            this.socket!.once('auth-error', (error: any) => {
+            this.socket.on(
+                'reconnect',
+                () => {
 
-                console.error(
-                    '[WS] Auth error:',
-                    error
-                );
-
-                this.isAuthenticated = false;
-
-                reject(
-                    new Error(
-                        error?.error || 'Authentication failed'
-                    )
-                );
-            });
-
-            // =========================
-            // CONNECT ERROR
-            // =========================
-
-            this.socket!.once(
-                'connect_error',
-                (error: Error) => {
-
-                    console.error(
-                        '[WS] Connection error:',
-                        error
+                    console.log(
+                        '[WS] Reconnected'
                     );
 
-                    this.isConnected = false;
+                    this.isConnected = true;
 
-                    reject(error);
+                    this.isAuthenticated = false;
+
+                    this.socket?.emit(
+                        'authenticate',
+                        { token }
+                    );
                 }
             );
 
@@ -152,67 +138,232 @@ class WebSocketService {
             // DISCONNECT
             // =========================
 
-            this.socket!.on('disconnect', (reason) => {
+            this.socket.on(
+                'disconnect',
+                (reason) => {
 
-                console.log(
-                    '[WS] Disconnected:',
-                    reason
-                );
+                    console.log(
+                        '[WS] Disconnected:',
+                        reason
+                    );
 
-                this.isConnected = false;
+                    this.isConnected = false;
 
-                this.isAuthenticated = false;
-            });
-        });
+                    this.isAuthenticated = false;
+                }
+            );
+
+            return new Promise(
+                (resolve, reject) => {
+
+                    const timeout =
+                        setTimeout(() => {
+
+                            console.error(
+                                '[WS] Connection timeout'
+                            );
+
+                            this.isConnected = false;
+
+                            this.isAuthenticated = false;
+
+                            reject(
+                                new Error(
+                                    'Connection timeout'
+                                )
+                            );
+
+                        }, 8000);
+
+                    // =========================
+                    // CONNECT
+                    // =========================
+
+                    this.socket!.once(
+                        'connect',
+                        () => {
+
+                            console.log(
+                                '[WS] Connected'
+                            );
+
+                            this.isConnected = true;
+
+                            this.socket!.emit(
+                                'authenticate',
+                                { token }
+                            );
+                        }
+                    );
+
+                    // =========================
+                    // AUTHENTICATED
+                    // =========================
+
+                    this.socket!.once(
+                        'authenticated',
+                        (
+                            data: {
+                                userId: string;
+                            }
+                        ) => {
+
+                            clearTimeout(
+                                timeout
+                            );
+
+                            console.log(
+                                '[WS] Authenticated:',
+                                data.userId
+                            );
+
+                            this.isConnected = true;
+
+                            this.isAuthenticated = true;
+
+                            resolve();
+                        }
+                    );
+
+                    // =========================
+                    // AUTH ERROR
+                    // =========================
+
+                    this.socket!.once(
+                        'auth-error',
+                        (error: any) => {
+
+                            clearTimeout(
+                                timeout
+                            );
+
+                            console.error(
+                                '[WS] Auth error:',
+                                error
+                            );
+
+                            this.isConnected = false;
+
+                            this.isAuthenticated = false;
+
+                            reject(
+                                new Error(
+                                    error?.error ||
+                                    'Authentication failed'
+                                )
+                            );
+                        }
+                    );
+
+                    // =========================
+                    // CONNECT ERROR
+                    // =========================
+
+                    this.socket!.once(
+                        'connect_error',
+                        (
+                            error: Error
+                        ) => {
+
+                            clearTimeout(
+                                timeout
+                            );
+
+                            console.error(
+                                '[WS] Connect error:',
+                                error
+                            );
+
+                            this.isConnected = false;
+
+                            this.isAuthenticated = false;
+
+                            reject(error);
+                        }
+                    );
+                }
+            );
+
+        } finally {
+
+            // libera lock
+            this.isConnecting = false;
+        }
     }
 
     // =========================
     // WAIT FOR CONNECTION
     // =========================
-
+    
     async waitForConnection(
-        timeout = 5000
+        timeout = 8000
     ): Promise<void> {
-
-        if (this.isConnected) {
+    
+        // já conectado
+        if (
+            this.isConnected &&
+            this.isAuthenticated
+        ) {
+        
+            console.log(
+                '[WS] Already connected/authenticated'
+            );
+        
             return;
         }
-
-        return new Promise((resolve, reject) => {
-
-            const timer = setTimeout(() => {
-
-                reject(
-                    new Error(
-                        'WebSocket connection timeout'
-                    )
-                );
-
-            }, timeout);
-
-            this.socket?.once('connect', () => {
-
-                clearTimeout(timer);
-
-                console.log(
-                    '[WS] waitForConnection resolved'
-                );
-
-                this.isConnected = true;
-
-                resolve();
-            });
-
-            this.socket?.once(
-                'connect_error',
-                (error) => {
-
-                    clearTimeout(timer);
-
-                    reject(error);
-                }
-            );
-        });
+    
+        return new Promise(
+            (resolve, reject) => {
+            
+                const deadline =
+                    Date.now() + timeout;
+            
+                const check = () => {
+                
+                    // conexão concluída
+                    if (
+                        this.isConnected &&
+                        this.isAuthenticated
+                    ) {
+                    
+                        console.log(
+                            '[WS] waitForConnection resolved'
+                        );
+                    
+                        resolve();
+                    
+                        return;
+                    }
+                
+                    // timeout
+                    if (
+                        Date.now() >
+                        deadline
+                    ) {
+                    
+                        console.error(
+                            '[WS] waitForConnection timeout'
+                        );
+                    
+                        reject(
+                            new Error(
+                                'WebSocket timeout'
+                            )
+                        );
+                    
+                        return;
+                    }
+                
+                    // continua verificando
+                    setTimeout(
+                        check,
+                        100
+                    );
+                };
+            
+                check();
+            }
+        );
     }
 
     // =========================
@@ -221,7 +372,9 @@ class WebSocketService {
 
     disconnect(): void {
 
-        console.log('[WS] Disconnecting...');
+        console.log(
+            '[WS] Disconnecting...'
+        );
 
         if (this.socket) {
 
@@ -235,6 +388,8 @@ class WebSocketService {
         this.isConnected = false;
 
         this.isAuthenticated = false;
+
+        this.isConnecting = false;
     }
 
     // =========================
@@ -244,21 +399,32 @@ class WebSocketService {
     removeAppListeners(): void {
 
         const events = [
+
             'new-message',
+
             'queue-status',
+
             'match-found',
+
             'matching-cancelled',
+
             'partner-typing',
+
             'partner-left',
+
             'partner-disconnected',
+
             'room-joined',
+
             'error',
         ];
 
-        events.forEach((event) => {
+        events.forEach(
+            (event) => {
 
-            this.socket?.off(event);
-        });
+                this.socket?.off(event);
+            }
+        );
     }
 
     // =========================
@@ -272,16 +438,23 @@ class WebSocketService {
             category
         );
 
-        this.socket?.emit('find-match', {
-            category,
-        });
+        this.socket?.emit(
+            'find-match',
+            {
+                category,
+            }
+        );
     }
 
     cancelMatch(): void {
 
-        console.log('[WS] Cancel match');
+        console.log(
+            '[WS] Cancel matching'
+        );
 
-        this.socket?.emit('cancel-matching');
+        this.socket?.emit(
+            'cancel-matching'
+        );
     }
 
     // =========================
@@ -295,9 +468,12 @@ class WebSocketService {
             roomId
         );
 
-        this.socket?.emit('join-room', {
-            roomId,
-        });
+        this.socket?.emit(
+            'join-room',
+            {
+                roomId,
+            }
+        );
     }
 
     leaveRoom(roomId: string): void {
@@ -307,9 +483,12 @@ class WebSocketService {
             roomId
         );
 
-        this.socket?.emit('leave-room', {
-            roomId,
-        });
+        this.socket?.emit(
+            'leave-room',
+            {
+                roomId,
+            }
+        );
     }
 
     // =========================
@@ -326,10 +505,13 @@ class WebSocketService {
             text
         );
 
-        this.socket?.emit('send-message', {
-            roomId,
-            text,
-        });
+        this.socket?.emit(
+            'send-message',
+            {
+                roomId,
+                text,
+            }
+        );
     }
 
     // =========================
@@ -338,12 +520,16 @@ class WebSocketService {
 
     typingStart(): void {
 
-        this.socket?.emit('typing-start');
+        this.socket?.emit(
+            'typing-start'
+        );
     }
 
     typingStop(): void {
 
-        this.socket?.emit('typing-stop');
+        this.socket?.emit(
+            'typing-stop'
+        );
     }
 
     // =========================
@@ -351,7 +537,9 @@ class WebSocketService {
     // =========================
 
     onMessage(
-        callback: (message: any) => void
+        callback: (
+            message: any
+        ) => void
     ): void {
 
         this.socket?.on(
@@ -361,7 +549,9 @@ class WebSocketService {
     }
 
     onQueueStatus(
-        callback: (data: any) => void
+        callback: (
+            data: any
+        ) => void
     ): void {
 
         this.socket?.on(
@@ -371,7 +561,9 @@ class WebSocketService {
     }
 
     onMatchingFound(
-        callback: (room: any) => void
+        callback: (
+            room: any
+        ) => void
     ): void {
 
         this.socket?.on(
@@ -381,7 +573,9 @@ class WebSocketService {
     }
 
     onMatchingCancelled(
-        callback: (data: any) => void
+        callback: (
+            data: any
+        ) => void
     ): void {
 
         this.socket?.on(
@@ -391,7 +585,9 @@ class WebSocketService {
     }
 
     onPartnerTyping(
-        callback: (data: any) => void
+        callback: (
+            data: any
+        ) => void
     ): void {
 
         this.socket?.on(
@@ -401,7 +597,9 @@ class WebSocketService {
     }
 
     onPartnerLeft(
-        callback: (data: any) => void
+        callback: (
+            data: any
+        ) => void
     ): void {
 
         this.socket?.on(
@@ -411,7 +609,9 @@ class WebSocketService {
     }
 
     onPartnerDisconnected(
-        callback: (data: any) => void
+        callback: (
+            data: any
+        ) => void
     ): void {
 
         this.socket?.on(
@@ -421,7 +621,9 @@ class WebSocketService {
     }
 
     onError(
-        callback: (error: any) => void
+        callback: (
+            error: any
+        ) => void
     ): void {
 
         this.socket?.on(
@@ -431,4 +633,5 @@ class WebSocketService {
     }
 }
 
-export const wsService = new WebSocketService();
+export const wsService =
+    new WebSocketService();
