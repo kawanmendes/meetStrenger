@@ -304,66 +304,30 @@ export function useChat(category: string) {
     // START MATCH
     // =========================
 
-    const startMatch =
-        useCallback(
-            async () => {
+    const startMatch = useCallback(
+    async () => {
+        // matchStarted.current já serve de lock
+        // a condição no useEffect verifica isMatching
+        if (matchStarted.current) {
+            console.log('[CHAT] Match already started');
+            return;
+        }
 
-                // evita múltiplos find-match
-                if (
-                    isMatching ||
-                    matchStarted.current
-                ) {
-
-                    console.log(
-                        '[CHAT] Match already started'
-                    );
-
-                    return;
-                }
-
-                try {
-
-                    console.log(
-                        '[CHAT] Starting match...'
-                    );
-
-                    matchStarted.current =
-                        true;
-
-                    setIsMatching(
-                        true
-                    );
-
-                    setPartnerName(
-                        'procurando...'
-                    );
-
-                    await wsService.waitForConnection();
-
-                    wsService.findMatch(
-                        category
-                    );
-
-                } catch (error) {
-
-                    console.error(
-                        '[CHAT] Match error:',
-                        error
-                    );
-
-                    setIsMatching(
-                        false
-                    );
-
-                    matchStarted.current =
-                        false;
-                }
-            },
-            [
-                category,
-                isMatching,
-            ]
-        );
+        try {
+            console.log('[CHAT] Starting match...');
+            matchStarted.current = true;
+            setIsMatching(true);
+            setPartnerName('procurando...');
+            await wsService.waitForConnection();
+            wsService.findMatch(category);
+        } catch (error) {
+            console.error('[CHAT] Match error:', error);
+            setIsMatching(false);
+            matchStarted.current = false;
+        }
+    },
+    [category]  // ← APENAS category. isMatching fora
+);
 
     // =========================
     // CANCEL MATCH
