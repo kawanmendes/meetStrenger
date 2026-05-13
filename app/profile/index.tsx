@@ -129,10 +129,7 @@ export default function Profile() {
             variant="primary"
             onPress={() => router.push('/profile/avatar-shop')}
           />
-          <PillButton
-            title={`Tema: ${mode === 'light' ? 'claro' : 'escuro'}`}
-            onPress={toggleTheme}
-          />
+
           <PillButton
             title="Voltar para home"
             onPress={() => router.replace('/home')}

@@ -64,7 +64,7 @@ export default function Login() {
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <AnimalAvatar source={appImages.mascot} size={118} />
+            <AnimalAvatar source={appImages.mascot} size={160} isLogo />
             <Text style={styles.title}>Bem-vindo de volta</Text>
             <Text style={styles.subtitle}>Use sua conta para encontrar novas conversas.</Text>
           </View>

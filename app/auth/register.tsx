@@ -69,7 +69,7 @@ export default function Register() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <AnimalAvatar source={appImages.mascot} size={112} />
+            <AnimalAvatar source={appImages.mascot} size={160} isLogo />
             <Text style={styles.title}>Criar conta</Text>
             <Text style={styles.subtitle}>Escolha um apelido e comece a conversar.</Text>
           </View>
