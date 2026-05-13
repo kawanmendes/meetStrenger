@@ -1,7 +1,18 @@
+/**
+ * ROOT LAYOUT — MeetStranger Mobile
+ *
+ * Caminho: app/_layout.tsx
+ *
+ * Alteração: adicionado <AvatarShopProvider> para que o estado
+ * da loja (avatar equipado, moedas, compras) seja compartilhado
+ * entre profile/index.tsx e profile/avatar-shop.tsx.
+ */
+
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { ThemeProvider } from '../design-system/context/ThemeContext';
 import { AuthProvider, useAuth } from '../hooks/useAuth';
+import { AvatarShopProvider } from '../hooks/useAvatarShop';
 
 // Guard de rota — redireciona baseado em autenticação
 function RouteGuard() {
@@ -27,9 +38,12 @@ export default function RootLayout() {
   return (
     <ThemeProvider initialMode="light">
       <AuthProvider>
-        <RouteGuard />
-        <Stack screenOptions={{ headerShown: false }} />
+        {/* ✅ AvatarShopProvider adicionado aqui para compartilhar estado entre telas */}
+        <AvatarShopProvider>
+          <RouteGuard />
+          <Stack screenOptions={{ headerShown: false }} />
+        </AvatarShopProvider>
       </AuthProvider>
     </ThemeProvider>
   );
-} 
+}
