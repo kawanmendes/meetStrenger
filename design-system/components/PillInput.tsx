@@ -17,7 +17,6 @@ export function PillInput({ label, error, style, ...props }: PillInputProps) {
       marginBottom: theme.spacing.lg,
     },
     label: {
-      color: '#FFFFFF',
       fontSize: 13,
       fontWeight: '900',
       marginBottom: theme.spacing.sm,

@@ -16,14 +16,9 @@ export function AnimalAvatar({ source, animal = 'MS', size = 104, style }: Anima
     avatar: {
       width: size,
       height: size,
-      borderRadius: theme.radius.full,
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: 'rgba(255,255,255,0.88)',
-      borderWidth: 2,
-      borderColor: 'rgba(255,255,255,0.72)',
       overflow: 'hidden',
-      ...(getShadow(theme.shadows.glass)),
     },
     image: {
       width: '78%',

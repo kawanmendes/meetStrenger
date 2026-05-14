@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { AnimalAvatar, GradientBackground, PillButton, PillInput, useTheme } from '../../design-system';
+import { AnimalAvatar, GradientBackground, PillButton, PillInput, themeDark, useTheme } from '../../design-system';
 import { useAuth } from '../../hooks/useAuth';
 import { appImages } from '../../constants/assets';
 
@@ -27,14 +27,13 @@ export default function Register() {
       gap: theme.spacing.md,
     },
     title: {
-      color: '#FFFFFF',
+      color: theme.colors.primary,
       fontSize: 30,
       lineHeight: 36,
       fontWeight: '900',
       textAlign: 'center',
     },
     subtitle: {
-      color: 'rgba(255,255,255,0.84)',
       fontSize: 15,
       fontWeight: '700',
       textAlign: 'center',
@@ -69,12 +68,12 @@ export default function Register() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <AnimalAvatar source={appImages.mascot} size={112} />
+            <AnimalAvatar source={appImages.mascot_register} size={250} />
             <Text style={styles.title}>Criar conta</Text>
             <Text style={styles.subtitle}>Escolha um apelido e comece a conversar.</Text>
           </View>
           <View style={styles.form}>
-            <PillInput label="Nome" value={name} onChangeText={setName} placeholder="Seu apelido" />
+            <PillInput label="Nome"   value={name} onChangeText={setName} placeholder="Seu apelido" />
             <PillInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="seu@email.com" />
             <PillInput label="Senha" value={password} onChangeText={setPassword} secureTextEntry placeholder="Minimo 6 caracteres" />
             <PillInput label="Confirmar senha" value={confirmPassword} onChangeText={setConfirmPassword} secureTextEntry placeholder="Repita sua senha" />

@@ -1,5 +1,5 @@
 export const appImages = {
-  mascot: require('../assets/illustrations/mascot.jpg'),
+  mascot: require('../assets/illustrations/mascot.png'),
   perfil1:require('../assets/illustrations/perfil1.png'),
   perfil2:require('../assets/illustrations/perfil2.png'),
   perfil3:require('../assets/illustrations/perfil3.png'),
@@ -9,5 +9,6 @@ export const appImages = {
   perfil7:require('../assets/illustrations/perfil7.png'),
   perfil8:require('../assets/illustrations/perfil8.png'),
   perfil9:require('../assets/illustrations/perfil9.png'),
+  mascot_register: require('../assets/illustrations/mascot_register.png')
 
 } as const;

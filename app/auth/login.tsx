@@ -27,14 +27,13 @@ export default function Login() {
       gap: theme.spacing.md,
     },
     title: {
-      color: '#FFFFFF',
+      color: theme.colors.primary,
       fontSize: 30,
       lineHeight: 36,
       fontWeight: '900',
       textAlign: 'center',
     },
     subtitle: {
-      color: 'rgba(255,255,255,0.84)',
       fontSize: 15,
       fontWeight: '700',
       textAlign: 'center',
@@ -64,7 +63,7 @@ export default function Login() {
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <AnimalAvatar source={appImages.mascot} size={118} />
+            <AnimalAvatar source={appImages.mascot} size={300} />
             <Text style={styles.title}>Bem-vindo de volta</Text>
             <Text style={styles.subtitle}>Use sua conta para encontrar novas conversas.</Text>
           </View>
