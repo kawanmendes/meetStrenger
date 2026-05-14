@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../hooks/useTheme';
 import { getShadow } from '../tokens/shadows';
+import { usePressAnimation } from '../animations/interactions';
 
 interface PillButtonProps {
   title: string;
@@ -16,6 +17,7 @@ interface PillButtonProps {
 
 export function PillButton({ title, onPress, variant = 'glass', disabled = false, loading = false, style, textStyle }: PillButtonProps) {
   const theme = useTheme();
+  const pressAnimation = usePressAnimation(0.98);
   const isPrimary = variant === 'primary';
   const isDanger = variant === 'danger';
 
@@ -50,21 +52,25 @@ export function PillButton({ title, onPress, variant = 'glass', disabled = false
   );
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={disabled || loading}
-      onPress={onPress}
-      style={({ pressed }) => [styles.pressable, pressed && !disabled ? { transform: [{ scale: 0.98 }] } : null, style]}
-    >
-      {isPrimary ? (
-        <LinearGradient colors={theme.gradients.primaryButton} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.content}>
-          {loading ? <ActivityIndicator color="#FFFFFF" /> : content}
-        </LinearGradient>
-      ) : (
-        <View style={styles.content}>
-          {loading ? <ActivityIndicator color={theme.colors.primaryDark} /> : content}
-        </View>
-      )}
-    </Pressable>
+    <Animated.View style={[pressAnimation.pressStyle, style]}>
+      <Pressable
+        accessibilityRole="button"
+        disabled={disabled || loading}
+        onPress={onPress}
+        onPressIn={pressAnimation.onPressIn}
+        onPressOut={pressAnimation.onPressOut}
+        style={styles.pressable}
+      >
+        {isPrimary ? (
+          <LinearGradient colors={theme.gradients.primaryButton} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.content}>
+            {loading ? <ActivityIndicator color="#FFFFFF" /> : content}
+          </LinearGradient>
+        ) : (
+          <View style={styles.content}>
+            {loading ? <ActivityIndicator color={theme.colors.primaryDark} /> : content}
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }

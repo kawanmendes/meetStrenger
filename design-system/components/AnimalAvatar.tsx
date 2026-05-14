@@ -8,9 +8,10 @@ interface AnimalAvatarProps {
   animal?: string;
   size?: number;
   style?: ViewStyle;
+    isLogo?: boolean;
 }
 
-export function AnimalAvatar({ source, animal = 'MS', size = 104, style }: AnimalAvatarProps) {
+export function AnimalAvatar({ source, animal = 'MS', size = 104, style, isLogo = false }: AnimalAvatarProps) {
   const theme = useTheme();
   const styles = useMemo(() => StyleSheet.create({
     avatar: {
@@ -21,15 +22,15 @@ export function AnimalAvatar({ source, animal = 'MS', size = 104, style }: Anima
       overflow: 'hidden',
     },
     image: {
-      width: '78%',
-      height: '78%',
+      width: isLogo ? '100%' : '78%',
+      height: isLogo ? '100%' : '78%',
     },
     initials: {
       color: theme.colors.primaryDark,
       fontSize: Math.max(18, size * 0.28),
       fontWeight: '900',
     },
-  }), [size, theme]);
+  }), [size, theme, isLogo]);
 
   return (
     <View style={[styles.avatar, style]}>

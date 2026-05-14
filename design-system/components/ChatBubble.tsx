@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
+import { useSlideIn } from '../animations/slide';
 
 export type ChatBubblePosition = 'left' | 'right';
 
@@ -15,6 +16,7 @@ interface ChatBubbleProps {
 export function ChatBubble({ message, position, timestamp, username, showUsername = false }: ChatBubbleProps) {
   const theme = useTheme();
   const isUser = position === 'right';
+  const slideStyle = useSlideIn(isUser ? 'right' : 'left', 220);
   const styles = useMemo(() => StyleSheet.create({
     container: {
       alignItems: isUser ? 'flex-end' : 'flex-start',
@@ -54,12 +56,12 @@ export function ChatBubble({ message, position, timestamp, username, showUsernam
   }), [isUser, theme]);
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, slideStyle]}>
       {showUsername && username && !isUser ? <Text style={styles.username}>{username}</Text> : null}
       <View style={styles.bubble}>
         <Text style={styles.message}>{message}</Text>
         {timestamp ? <Text style={styles.timestamp}>{timestamp}</Text> : null}
       </View>
-    </View>
+    </Animated.View>
   );
 }

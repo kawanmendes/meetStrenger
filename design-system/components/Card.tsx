@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import { Animated, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { getShadow } from '../tokens/shadows';
+import { usePressAnimation } from '../animations/interactions';
 
 export type CardVariant = 'default' | 'elevated' | 'outlined' | 'clay';
 
@@ -16,6 +17,7 @@ interface CardProps {
 
 export function Card({ children, variant = 'default', padding = 'lg', onPress, style, disabled = false }: CardProps) {
   const theme = useTheme();
+  const pressAnimation = usePressAnimation(0.99);
   const styles = useMemo(() => StyleSheet.create({
     base: {
       padding: theme.spacing[padding],
@@ -30,9 +32,17 @@ export function Card({ children, variant = 'default', padding = 'lg', onPress, s
 
   if (onPress) {
     return (
-      <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.base, pressed && { transform: [{ scale: 0.99 }] }, style]}>
-        {children}
-      </Pressable>
+      <Animated.View style={[pressAnimation.pressStyle, style]}>
+        <Pressable
+          disabled={disabled}
+          onPress={onPress}
+          onPressIn={pressAnimation.onPressIn}
+          onPressOut={pressAnimation.onPressOut}
+          style={styles.base}
+        >
+          {children}
+        </Pressable>
+      </Animated.View>
     );
   }
 

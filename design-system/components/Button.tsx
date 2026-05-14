@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
 import { useTheme } from '../hooks/useTheme';
 import { getShadow } from '../tokens/shadows';
+import { usePressAnimation } from '../animations/interactions';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'clay';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -34,6 +35,7 @@ function PillCompatButton({
   fullWidth = false,
 }: ButtonProps) {
   const theme = useTheme();
+  const pressAnimation = usePressAnimation(0.98);
   const isPrimary = variant === 'primary' || variant === 'clay';
   const isDanger = variant === 'danger';
 
@@ -74,22 +76,21 @@ function PillCompatButton({
   }), [disabled, isDanger, isPrimary, size, theme, variant]);
 
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={disabled || loading}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.button,
-        fullWidth && styles.fullWidth,
-        pressed && !disabled ? { transform: [{ scale: 0.98 }] } : null,
-        style,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color={isDanger ? '#FFFFFF' : theme.colors.primaryDark} />
-      ) : (
-        <Text style={[styles.text, textStyle]}>{title}</Text>
-      )}
-    </Pressable>
+    <Animated.View style={[pressAnimation.pressStyle, fullWidth && styles.fullWidth, style]}>
+      <Pressable
+        accessibilityRole="button"
+        disabled={disabled || loading}
+        onPress={onPress}
+        onPressIn={pressAnimation.onPressIn}
+        onPressOut={pressAnimation.onPressOut}
+        style={[styles.button, fullWidth && styles.fullWidth]}
+      >
+        {loading ? (
+          <ActivityIndicator color={isDanger ? '#FFFFFF' : theme.colors.primaryDark} />
+        ) : (
+          <Text style={[styles.text, textStyle]}>{title}</Text>
+        )}
+      </Pressable>
+    </Animated.View>
   );
 }

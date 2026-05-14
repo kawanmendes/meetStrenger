@@ -129,6 +129,7 @@ export default function Profile() {
             variant="primary"
             onPress={() => router.push('/profile/avatar-shop')}
           />
+
           <PillButton
             title="Voltar para home"
             onPress={() => router.replace('/home')}

@@ -1,113 +1,90 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG } from './config';
 import { User } from '../constants/types';
- 
+
 class ApiService {
-    private baseUrl: string;
- 
-    constructor() {
-        this.baseUrl = API_CONFIG.BASE_URL.replace(/\/$/, '');
-    }
+  private baseUrl: string;
 
-    private async getAuthToken(): Promise<string | null> {
-        return await AsyncStorage.getItem('authToken');
-    }
+  constructor() {
+    this.baseUrl = API_CONFIG.BASE_URL.replace(/\/$/, '');
+  }
 
-    private async request<T>(
-        endpoint: string,
-        options: RequestInit = {}
-    ): Promise<T> {
-        const token = await this.getAuthToken();
-        const hasBody = typeof options.body !== 'undefined';
-        const headers: Record<string, string> = {
-            Accept: 'application/json',
-            ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-            ...(options.headers as Record<string, string> | undefined),
-        };
-        const config: RequestInit = {
-            ...options,
-            headers: {
-                ...headers,
-            },
-        };
-        const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-        const response = await fetch(`${this.baseUrl}${path}`, config);
-        if (!response.ok){
-            const error = await response.json().catch(() => ({message: 'Network error'}));
-            throw new Error(error.message || error.error || 'Request failed');
-        }
-        return response.json() as Promise<T>;
-    }
- 
-    async Login(email: string, password: string) {
-        const response = await this.request<{success: boolean; data: {token: string; user: User}}>('/auth/login',{
-            method: 'POST',
-            body: JSON.stringify({email, password}),
-        });
-        if(response.data?.token){
-            await AsyncStorage.setItem('authToken', response.data.token);
-        }
-        return response.data;
-    }
+  private async getAuthToken(): Promise<string | null> {
+    return await AsyncStorage.getItem('authToken');
+  }
 
-    login(email: string, password: string) {
-        return this.Login(email, password);
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const token = await this.getAuthToken();
+    const hasBody = typeof options.body !== 'undefined';
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers as Record<string, string> | undefined),
+    };
+    const config: RequestInit = { ...options, headers: { ...headers } };
+    const path = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const response = await fetch(`${this.baseUrl}${path}`, config);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Network error' }));
+      throw new Error(error.message || error.error || 'Request failed');
     }
+    return response.json() as Promise<T>;
+  }
 
-    async Register(username: string, email: string, password: string) {
-        const response = await this.request<{success: boolean; data: {token: string; user: User}}>('/auth/register',{
-            method: 'POST',
-            body: JSON.stringify({username, email, password}),
-        });
-        if(response.data?.token){
-            await AsyncStorage.setItem('authToken', response.data.token);
-        }
-        return response.data;
-    }
+  async login(email: string, password: string) {
+    const response = await this.request<{ success: boolean; data: { token: string; user: User } }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    if (response.data?.token) await AsyncStorage.setItem('authToken', response.data.token);
+    return response.data;
+  }
 
-    register(username: string, email: string, password: string) {
-        return this.Register(username, email, password);
-    }
+  async register(username: string, email: string, password: string) {
+    const response = await this.request<{ success: boolean; data: { token: string; user: User } }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username, email, password }),
+    });
+    if (response.data?.token) await AsyncStorage.setItem('authToken', response.data.token);
+    return response.data;
+  }
 
-    async Logout() {
-        await this.request('/auth/logout', { method: 'POST' }).catch(() => undefined);
-        await AsyncStorage.removeItem('authToken');
-    }
+  async logout() {
+    await this.request('/auth/logout', { method: 'POST' }).catch(() => undefined);
+    await AsyncStorage.removeItem('authToken');
+  }
 
-    logout() {
-        return this.Logout();
-    }
+  async getProfile() {
+    const response = await this.request<{ success: boolean; data: { user: User } }>('/auth/profile');
+    return response.data;
+  }
 
-    async getProfile() {
-        const response = await this.request<{success: boolean; data: {user: User}}>('/auth/profile');
-        return response.data;
-    }
+  async getRooms() {
+    const response = await this.request<{ success: boolean; data: { rooms: any[] } }>('/chat/rooms');
+    return response.data.rooms;
+  }
 
-    async getRooms(){
-        const response = await this.request<{success: boolean; data: {rooms: any[]}}>('/chat/rooms');
-        return response.data.rooms;
-    }
+  async getRoomMessages(roomId: string) {
+    const response = await this.request<{ success: boolean; data: { messages: any[] } }>(`/chat/rooms/${roomId}/messages`);
+    return response.data;
+  }
 
-    async getRoomMessages(roomId: string){
-        const response = await this.request<{success: boolean; data: {messages: any[]}}>(`/chat/rooms/${roomId}/messages`);
-        return response.data;
-    }
+  async sendMessage(roomId: string, text: string) {
+    const response = await this.request(`/chat/rooms/${roomId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+    return response;
+  }
 
-    async sendMessage(roomId: string, text: string){
-        const response = await this.request(`/chat/rooms/${roomId}/messages`, {
-            method: 'POST',
-            body: JSON.stringify({text}),
-        });
-        return response;
-    }
-
-    async findMatch(){
-        const response = await this.request<{success: boolean; data: {roomId: string}}>('/matching/find', {
-            method: 'POST',
-            body: JSON.stringify({}),
-        });
-        return response.data.roomId;
-    }
+  async findMatch() {
+    const response = await this.request<{ success: boolean; data: { roomId: string } }>('/matching/find', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+    return response.data.roomId;
+  }
 }
+
 export const apiService = new ApiService();
