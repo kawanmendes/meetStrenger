@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<true | string>;
   register: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuthStatus();
   }, [checkAuthStatus]);
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password: string): Promise<true | string> => {
     logger.auth.log('Login started');
     setIsLoading(true);
     try {
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     } catch (error) {
       logger.auth.error('Login error:', error);
-      return false;
+      return error instanceof Error ? error.message : 'Erro desconhecido';
     } finally {
       setIsLoading(false);
     }

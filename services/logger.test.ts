@@ -5,7 +5,7 @@
  */
 
 // Simular ambiente de desenvolvimento
-global.__DEV__ = true;
+(globalThis as typeof globalThis & { __DEV__: boolean }).__DEV__ = true;
 
 const sanitizeData = (data: any): any => {
   if (!data) return data;

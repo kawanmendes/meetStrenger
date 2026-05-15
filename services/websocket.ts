@@ -11,6 +11,11 @@ class WebSocketService {
 
   get connected(): boolean { return this.isConnected; }
   get authenticated(): boolean { return this.isAuthenticated; }
+  get socketId(): string | undefined { return this.socket?.id; }
+
+  private wait(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
   async connect(): Promise<void> {
     if (this.socket?.connected && this.isAuthenticated) {
@@ -141,8 +146,23 @@ class WebSocketService {
   }
 
   removeAppListeners(): void {
+    this.offAll();
+  }
+
+  async ensureConnected(): Promise<void> {
+    if (this.isConnected && this.isAuthenticated) return;
+    await this.connect();
+  }
+
+  async reconnect(): Promise<void> {
+    this.disconnect();
+    await this.wait(300);
+    await this.connect();
+  }
+
+  offAll(): void {
     const events = ['new-message', 'queue-status', 'match-found', 'matching-cancelled', 'partner-typing', 'partner-left', 'partner-disconnected', 'room-joined', 'error'];
-    events.forEach((event) => this.socket?.off(event));
+    events.forEach((event) => this.socket?.removeAllListeners(event));
   }
 
   findMatch(category: string): void {
@@ -153,6 +173,10 @@ class WebSocketService {
   cancelMatch(): void {
     logger.ws.log('Cancel matching');
     this.socket?.emit('cancel-matching');
+  }
+
+  async prepareForMatch(delay = 450): Promise<void> {
+    await this.wait(delay);
   }
 
   joinRoom(roomId: string): void {

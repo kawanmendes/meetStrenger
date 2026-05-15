@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChatMessage } from '../constants/types';
 import { wsService } from '../services/websocket';
 import { logger } from '../services/logger';
+import { useAuth } from './useAuth';
 
 export function useChat(category: string) {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isMatching, setIsMatching] = useState(false);
@@ -12,10 +14,20 @@ export function useChat(category: string) {
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const [estimatedWait, setEstimatedWait] = useState('');
   const [partnerTyping, setPartnerTyping] = useState(false);
+  const [listenerVersion, setListenerVersion] = useState(0);
   const matchStarted = useRef(false);
+  const currentRoomRef = useRef<string | null>(null);
+  const staleRecoveryRef = useRef(false);
+  const isLeavingRef = useRef(false);
 
   const handleNewMessage = useCallback((data: any) => {
     logger.chat.log('New message:', data);
+    const isOwnMessage =
+      (data.socketId && data.socketId === wsService.socketId) ||
+      (typeof data.senderId !== 'undefined' && String(data.senderId) === String(user?.id));
+
+    if (isOwnMessage) return;
+
     const newMessage: ChatMessage = {
       id: data.id || `${Date.now()}`,
       text: data.text,
@@ -23,11 +35,15 @@ export function useChat(category: string) {
       timestamp: new Date(data.timestamp),
       userName: data.username || 'desconhecido',
     };
-    setMessages((prev) => [...prev, newMessage]);
-  }, []);
+    setMessages((prev) => {
+      if (data.id && prev.some((message) => message.id === data.id)) return prev;
+      return [...prev, newMessage];
+    });
+  }, [user?.id]);
 
   const handleMatchFound = useCallback((data: any) => {
     logger.chat.log('Match found:', data);
+    currentRoomRef.current = data.roomId;
     setCurrentRoomId(data.roomId);
     setIsConnected(true);
     setIsMatching(false);
@@ -59,6 +75,8 @@ export function useChat(category: string) {
 
   const handlePartnerDisconnect = useCallback((data: any) => {
     logger.chat.log('Partner disconnected/left:', data);
+    if (isLeavingRef.current) return;
+    currentRoomRef.current = null;
     setIsConnected(false);
     setCurrentRoomId(null);
     setMessages([]);
@@ -67,15 +85,43 @@ export function useChat(category: string) {
     matchStarted.current = false;
   }, []);
 
+  const recoverStaleSocket = useCallback(async () => {
+    if (staleRecoveryRef.current) return;
+    if (isLeavingRef.current) return;
+    staleRecoveryRef.current = true;
+    try {
+      logger.chat.log('Recovering stale socket state');
+      await wsService.reconnect();
+      setListenerVersion((version) => version + 1);
+    } catch (reconnectError) {
+      logger.chat.error('Socket recovery failed:', reconnectError);
+    } finally {
+      currentRoomRef.current = null;
+      setCurrentRoomId(null);
+      setIsConnected(false);
+      setIsMatching(false);
+      matchStarted.current = false;
+      staleRecoveryRef.current = false;
+    }
+  }, []);
+
   const handleSocketError = useCallback((error: any) => {
     logger.chat.error('Socket error:', error);
     setIsMatching(false);
     matchStarted.current = false;
-  }, []);
+    const message = String(error?.error || error?.message || '');
+    if (message.includes('Already in room') || message.includes('Not authenticated')) {
+      recoverStaleSocket().catch(() => undefined);
+    }
+  }, [recoverStaleSocket]);
 
   const startMatch = useCallback(async () => {
     if (matchStarted.current) {
       logger.chat.log('Match already started');
+      return;
+    }
+    if (isLeavingRef.current) {
+      logger.chat.log('Ignoring match start while leaving');
       return;
     }
     try {
@@ -83,7 +129,8 @@ export function useChat(category: string) {
       matchStarted.current = true;
       setIsMatching(true);
       setPartnerName('procurando...');
-      await wsService.waitForConnection();
+      await wsService.ensureConnected();
+      await wsService.prepareForMatch();
       wsService.findMatch(category);
     } catch (error) {
       logger.chat.error('Match error:', error);
@@ -97,6 +144,26 @@ export function useChat(category: string) {
     setIsMatching(false);
     matchStarted.current = false;
     wsService.cancelMatch();
+  }, []);
+
+  const leaveAndReset = useCallback(() => {
+    logger.chat.log('Leave and reset chat');
+    isLeavingRef.current = true;
+    const roomId = currentRoomRef.current;
+    if (roomId) wsService.leaveRoom(roomId);
+    wsService.cancelMatch();
+    wsService.offAll();
+    currentRoomRef.current = null;
+    setIsConnected(false);
+    setCurrentRoomId(null);
+    setIsMatching(false);
+    setMessages([]);
+    setPartnerName('procurando...');
+    setQueuePosition(null);
+    setEstimatedWait('');
+    setPartnerTyping(false);
+    matchStarted.current = false;
+    staleRecoveryRef.current = false;
   }, []);
 
   const sendMessage = useCallback((text: string) => {
@@ -116,6 +183,7 @@ export function useChat(category: string) {
     if (!currentRoomId) return;
     logger.chat.log('Skipping to next chat');
     wsService.leaveRoom(currentRoomId);
+    currentRoomRef.current = null;
     setIsConnected(false);
     setCurrentRoomId(null);
     setMessages([]);
@@ -126,6 +194,7 @@ export function useChat(category: string) {
   }, [currentRoomId, startMatch]);
 
   useEffect(() => {
+    isLeavingRef.current = false;
     logger.chat.log('Registering listeners');
     wsService.onMessage(handleNewMessage);
     wsService.onMatchingFound(handleMatchFound);
@@ -137,18 +206,22 @@ export function useChat(category: string) {
     wsService.onError(handleSocketError);
     return () => {
       logger.chat.log('Removing listeners');
-      wsService.removeAppListeners();
+      wsService.offAll();
+      isLeavingRef.current = true;
+      matchStarted.current = false;
+      staleRecoveryRef.current = false;
     };
-  }, [handleNewMessage, handleMatchFound, handleQueueStatus, handleMatchingCancelled, handlePartnerTyping, handlePartnerDisconnect, handleSocketError]);
+  }, [handleNewMessage, handleMatchFound, handleQueueStatus, handleMatchingCancelled, handlePartnerTyping, handlePartnerDisconnect, handleSocketError, listenerVersion]);
 
   useEffect(() => {
-    if (wsService.connected && !currentRoomId && !isMatching && !matchStarted.current) {
+    if (wsService.connected && !currentRoomId && !isMatching && !matchStarted.current && !isLeavingRef.current) {
       logger.chat.log('Auto starting match');
       startMatch().catch(() => { matchStarted.current = false; });
     }
   }, [currentRoomId, isMatching, startMatch]);
 
   useEffect(() => {
+    currentRoomRef.current = currentRoomId;
     if (currentRoomId) {
       logger.chat.log('Match found, resetting lock');
       matchStarted.current = false;
@@ -156,6 +229,6 @@ export function useChat(category: string) {
   }, [currentRoomId]);
 
   return useMemo(() => ({
-    messages, isConnected, isMatching, currentRoomId, partnerName, queuePosition, estimatedWait, partnerTyping, startMatch, cancelMatch, sendMessage, skipToNext,
-  }), [messages, isConnected, isMatching, currentRoomId, partnerName, queuePosition, estimatedWait, partnerTyping, startMatch, cancelMatch, sendMessage, skipToNext]);
+    messages, isConnected, isMatching, currentRoomId, partnerName, queuePosition, estimatedWait, partnerTyping, startMatch, cancelMatch, sendMessage, skipToNext, leaveAndReset,
+  }), [messages, isConnected, isMatching, currentRoomId, partnerName, queuePosition, estimatedWait, partnerTyping, startMatch, cancelMatch, sendMessage, skipToNext, leaveAndReset]);
 }

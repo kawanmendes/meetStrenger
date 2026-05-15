@@ -21,17 +21,23 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.kmz_kmz.meetStrangermobile"
     },
     "web": {
       "favicon": "./assets/icons/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font"
     ],
     "extra": {
       "API_URL": "https://meetstrenger-backend.onrender.com/api",
-      "WS_URL": "https://meetstrenger-backend.onrender.com"
+      "WS_URL": "https://meetstrenger-backend.onrender.com",
+      "router": {},
+      "eas": {
+        "projectId": "db1dd9ca-9f44-45ef-be53-f68a74f94241"
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChatBubble, ChatHeader, GradientBackground, PillButton, usePulseAnimation, useTheme } from '../../design-system';
 import { useChat } from '../../hooks/useChat';
 import { appImages } from '../../constants/assets';
@@ -10,7 +11,9 @@ import { logger } from '../../services/logger';
 export default function Room() {
   const router = useRouter();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
+  const hasLeftRef = useRef(false);
   const params = useLocalSearchParams<{ category?: string }>();
 
   const categoryParam = String(params.category ?? '');
@@ -29,6 +32,21 @@ export default function Room() {
   const [message, setMessage] = useState('');
   const thinkingPulse = usePulseAnimation(1300);
 
+  const cleanupChat = useCallback(() => {
+    if (hasLeftRef.current) return;
+    hasLeftRef.current = true;
+    chat.leaveAndReset();
+  }, [chat.leaveAndReset]);
+
+  const handleBack = useCallback(() => {
+    cleanupChat();
+    router.replace('/home');
+  }, [cleanupChat, router]);
+
+  useEffect(() => {
+    return cleanupChat;
+  }, [cleanupChat]);
+
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
   }, [chat.messages]);
@@ -44,12 +62,14 @@ export default function Room() {
   const styles = useMemo(() => StyleSheet.create({
     container: { flex: 1 },
     messages: { flex: 1 },
-    messagesContent: { paddingVertical: theme.spacing.lg, gap: theme.spacing.xs, paddingBottom: 32 },
+    messagesContent: { paddingVertical: theme.spacing.lg, gap: theme.spacing.xs, paddingBottom: 32 + insets.bottom },
     footer: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
-      padding: theme.spacing.lg,
+      paddingTop: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: Math.max(theme.spacing.lg, insets.bottom + theme.spacing.sm),
       borderTopWidth: 1,
       borderTopColor: 'rgba(255,255,255,0.24)',
       backgroundColor: 'rgba(255,255,255,0.16)',
@@ -68,7 +88,7 @@ export default function Room() {
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: theme.spacing.sm },
     thinkingImage: { width: 220, height: 220, resizeMode: 'contain', marginBottom: theme.spacing.sm },
     infoText: { color: theme.colors.textPrimary, fontSize: 16, fontWeight: '700', textAlign: 'center' },
-  }), [theme]);
+  }), [theme, insets.bottom]);
 
   const handleSend = () => {
     if (!message.trim() || !chat.isConnected) return;
@@ -85,7 +105,7 @@ export default function Room() {
   return (
     <GradientBackground variant="bubbles">
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ChatHeader title={`Chat ${category}`} subtitle={subtitle} avatarSource={appImages.mascot} onBack={() => router.replace('/home')} onNext={handleNext} showActions={chat.isConnected} />
+        <ChatHeader title={`Chat ${category}`} subtitle={subtitle} avatarSource={appImages.mascot} onBack={handleBack} onNext={handleNext} showActions={chat.isConnected} />
 
         {!chat.isConnected && chat.isMatching && (
           <View style={styles.center}>

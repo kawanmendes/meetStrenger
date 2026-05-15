@@ -49,13 +49,19 @@ export default function Login() {
       return;
     }
 
-    const success = await login(email.trim(), password);
-    if (success) {
+    const result = await login(email.trim(), password.trim());
+    if (result === true) {
       router.replace('/home');
       return;
     }
 
-    Alert.alert('Erro', 'Credenciais invalidas. Tente novamente.');
+    const messageByError: Record<string, string> = {
+      'Network request failed': 'Sem conexao com o servidor. Verifique sua internet.',
+      'Invalid credentials': 'Email ou senha incorretos.',
+      'User not found': 'Email nao cadastrado.',
+    };
+
+    Alert.alert('Erro', messageByError[result] ?? result);
   };
 
   return (
@@ -69,7 +75,7 @@ export default function Login() {
           </View>
           <View style={styles.form}>
             <PillInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="seu@email.com" />
-            <PillInput label="Senha" value={password} onChangeText={setPassword} secureTextEntry placeholder="Sua senha" />
+            <PillInput label="Senha" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" autoCorrect={false} spellCheck={false} placeholder="Sua senha" />
             <PillButton title="Entrar" variant="primary" onPress={handleLogin} loading={isLoading} />
             <PillButton title="Criar conta" onPress={() => router.push('/auth/register')} />
           </View>
