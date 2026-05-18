@@ -13,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -29,6 +30,8 @@ import { useAvatarShop, AvatarItem } from '../../hooks/useAvatarShop';
 // ==============================
 
 function ShopHeader({ onBack }: { onBack: () => void }) {
+  const router = useRouter();
+
   const theme = useTheme();
   const { coins, equippedAvatar } = useAvatarShop();
 
@@ -108,10 +111,12 @@ function ShopHeader({ onBack }: { onBack: () => void }) {
         <Text style={styles.equippedLabel}>Equipado</Text>
       </View>
 
+      <TouchableOpacity onPress={() => router.push('/coins')}>
       <View style={styles.coinBadge}>
         <Text style={styles.coinIcon}>🪙</Text>
         <Text style={styles.coinAmount}>{coins}</Text>
       </View>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -477,11 +482,14 @@ export default function AvatarShop() {
 
         <View style={styles.divider} />
 
+        
         <View style={styles.statsRow}>
-          <View style={styles.statChip}>
+          <TouchableOpacity onPress={() => router.push('/coins')}>
+          <View style={styles.statChip} >
             <Text style={styles.statValue}>🪙 {coins}</Text>
             <Text style={styles.statLabel}>Moedas</Text>
           </View>
+          </TouchableOpacity>
           <View style={styles.statChip}>
             <Text style={styles.statValue}>
               {purchasedIds.length}/{avatars.length}
